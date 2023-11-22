@@ -131,7 +131,7 @@ def main(CONFIG_PATH: str):
     config = json.load(open(CONFIG_PATH))
     logger.warning("Note: It is important that numerical columns are pre-processed first, before categorical ones. This is to avoid OneHotEncoded columns (binary 0 and 1) to be seen as numerical during numerical pre-processing.")
 
-    data = sns.load_dataset("titanic")
+    data = pd.read_csv(config["data_path"])
 
     preprocessor_class = PreProcessor(config=config)
 

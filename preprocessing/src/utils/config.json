@@ -1,11 +1,11 @@
 {
-  "data_path": "",
+  "data_path": "C:/Users/rafaelo/Downloads/imdb_movies_shows.csv",
   "numerical_preprocessing": {
-    "StandardScaler": ["fare"],
+    "StandardScaler": ["all"],
     "MinMaxScaler": [""]
   },
   "categorical_preprocessing": {
-    "OneHotEncoder": ["pclass"],
-    "OrdinalEncoder": ["embarked"]
+    "OneHotEncoder": [""],
+    "OrdinalEncoder": ["all"]
   }
 }
