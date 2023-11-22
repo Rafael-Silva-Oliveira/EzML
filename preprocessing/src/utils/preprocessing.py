@@ -13,13 +13,22 @@ from loguru import logger
 
 class PreProcessor:
 
-    def __init__(self, config):
+    def __init__(self, config: dict):
         self.config = config
 
-    def main_preprocessor(self, data, dtype):
+    def main_preprocessor(self, data: pd.DataFrame, dtype: str):
+        """_summary_
+
+        Args:
+                        data (pd.DatFrame): _description_
+                        dtype (string): _description_
+
+        Returns:
+                        _type_: _description_
+        """
+        logger.info(f"Pre-processing {dtype} columns")
 
         if dtype == "categorical":
-
             avaliable_preprocessors = {
                 "OneHotEncoder": OneHotEncoder(handle_unknown='ignore', sparse_output=False),
                 "OrdinalEncoder": OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1),
@@ -71,11 +80,12 @@ class PreProcessor:
                 continue
 
             try:
+                # For each column, grab the associated preprocessor associated with the column to load and pass onto the ColumnTransformer
                 preprocessor_name = [
                     preprocessor for preprocessor, columns in settings.items() if col in columns][0]
                 preprocessor = avaliable_preprocessors[preprocessor_name]
                 logger.info(
-                    f"Column {col} being processed using {preprocessor_name}")
+                    f"Column {col} will now start being processed using {preprocessor_name}")
 
             except Exception as e:
                 logger.warning(
@@ -106,14 +116,18 @@ class PreProcessor:
                 )
                 # data_cp[col] = new_data
             elif dtype == "categorical":
-                # Keep original and newly transformed columns
+                # Keep original and newly transformed columns. This is done differently than with numerical columns since OneHotEncoding gives at least 2 columns which the .insert() method doesn't allow to use. This way, we split the dataframe as before the transformed column, trasnformed column and all the other columns after the transformed column.
                 data_cp = pd.concat(
                     [data_cp.iloc[:, :col_idx+1], new_data, data_cp.iloc[:, col_idx+1:]], axis=1)
         return data_cp
 
 
-def main(CONFIG_PATH):
+def main(CONFIG_PATH: str):
+    """_summary_
 
+    Args:
+                                                                                                                                                                                                                                                                    CONFIG_PATH (string): _description_
+    """
     config = json.load(open(CONFIG_PATH))
     logger.warning("Note: It is important that numerical columns are pre-processed first, before categorical ones. This is to avoid OneHotEncoded columns (binary 0 and 1) to be seen as numerical during numerical pre-processing.")
 
@@ -121,12 +135,15 @@ def main(CONFIG_PATH):
 
     preprocessor_class = PreProcessor(config=config)
 
+    # Start by pre-processing selected numerical columns
     data = preprocessor_class.main_preprocessor(
         data=data, dtype="numerical")
+
+    # Finally, process categorical columns
     data = preprocessor_class.main_preprocessor(
         data=data, dtype="categorical")
 
-    tt = 2
+    return data
 
 
 main(CONFIG_PATH=r"C:\Users\rafaelo\OneDrive - NTNU\Documents\Projects\preprocessing\preprocessing\preprocessing\src\utils\config.json")
