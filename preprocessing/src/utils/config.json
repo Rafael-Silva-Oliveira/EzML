@@ -1,0 +1,11 @@
+{
+  "data_path": "",
+  "numerical_preprocessing": {
+    "StandardScaler": ["fare"],
+    "MinMaxScaler": [""]
+  },
+  "categorical_preprocessing": {
+    "OneHotEncoder": ["pclass"],
+    "OrdinalEncoder": ["embarked"]
+  }
+}
