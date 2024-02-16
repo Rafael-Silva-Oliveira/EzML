@@ -121,6 +121,7 @@ class ModelTraining:
         param_distribution = None
         best_baseline_model_cv_results = None
         cv_results_dict = {}
+        plotting_metrics = {}
         models = model_settings["models"]
 
         # Load dummy classifier with most frequent categorization and use the score as baseline
@@ -237,6 +238,10 @@ class ModelTraining:
                         f"Score being used to calculate the best validation score is {eval_score} and reached a mean score for the CV of {current_model_score}. \n Generalization score for {model_name} with hyperparameters tuning:\n"
                         f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}."
                     )
+                    plotting_metrics["LogisticRegression"] = {
+                        f"test_{eval_score}": current_model_score,
+                        "std": cv_results_test.std(),
+                    }
 
                     # TODO: check notebook sklearn to add std from cv results to add to the plot with the balance accuracy results from all models.absolutely. Create a dictionary that saves the results of all the models (Cv_results) so I can then save the balance_accuracy of each model with a std.
                     if current_model_score > best_score:
@@ -328,6 +333,7 @@ class ModelTraining:
                 new_path, modelling_problem_type, best_model_name, date
             )
         )
+        self.plot_CV_results(eval_score, plotting_results, saving_path)
 
     # TODO: add validation curve to check for overfitting
     # TODO: save best model as JSON
@@ -390,3 +396,52 @@ class ModelTraining:
         return selector_fitted, selected_features
 
     def feature_engineering(self): ...
+
+    def plot_CV_results(self, eval_score, plotting_metrics):
+
+        import pandas as pd
+        import matplotlib.pyplot as plt
+
+        # Extracting data from the dictionary
+        names = list(plotting_metrics.keys())
+        results = [result[f"test_{eval_score}"] for result in plotting_metrics.values()]
+        std = [result["std"] for result in plotting_metrics.values()]
+
+        # Create a DataFrame
+        df_new = pd.DataFrame(
+            list(zip(names, results, std)),
+            columns=["Model", f"test_{eval_score}", "Std"],
+        )
+
+        # Sort the DataFrame
+        df_sorted = df_new.sort_values(f"test_{eval_score}")
+        df_sorted.index = df_sorted.Model
+        df_sorted = df_sorted.round(3)
+
+        # Plotting
+        plt.figure(figsize=(12, 7))
+        ax = df_sorted.plot(
+            kind="barh",
+            x="Model",
+            y=f"test_{eval_score}",
+            xerr="Std",
+            facecolor="#AA0000",
+            figsize=(15, 10),
+            fontsize=12,
+            capsize=5,
+        )
+
+        gap = 0.015  # Space between the text and the end of the bar
+        # You have to call ax.text() for each bar
+        # They are already sorted and you need the index of the bar
+        for i, (v, s) in enumerate(zip(df_sorted[f"test_{eval_score}"], df_sorted.Std)):
+            ax.text(
+                v + s + gap, i, f"{v} ± {s}", color="blue"
+            )  # Place the text at x=v+gap and y= idx
+
+        ax.spines["bottom"].set_color("#CCCCCC")
+        ax.set_xlabel(f"test_{eval_score}", fontsize=12)
+        ax.set_ylabel("Model", fontsize=12)
+        plt.title("Model Comparison for Classification")
+
+        plt.show()
