@@ -120,6 +120,7 @@ class ModelTraining:
         best_baseline_model = None
         param_distribution = None
         best_baseline_model_cv_results = None
+        cv_results_dict = {}
         models = model_settings["models"]
 
         # Load dummy classifier with most frequent categorization and use the score as baseline
@@ -182,16 +183,41 @@ class ModelTraining:
 
                     logger.info(f"Running CV for {model_name}.")
 
+                    # Transform strings in the param_distribution to actual ranges
+                    param_distribution_final = {
+                        key: (
+                            eval(value)
+                            if isinstance(value, str) and value.startswith("np.")
+                            else value
+                        )
+                        for key, value in model_utils["hyperparameters"][
+                            "param_distribution"
+                        ].items()
+                    }
+
+                    # Optimizing the best baseline model on training data
+                    logger.info(
+                        f"Optimizing baseline model using RandomizedSearchCV. \n Baseline model is {model_name} and it will be optimized with the following parameters: \n{param_distribution_final}"
+                    )
+
                     # Load cross validation strategy dynamically
                     cv = _return_cross_validation(hyperparameter_settings)
 
-                    logger.info(
-                        f"Running cross-validation to find best baseline model. "
-                    )
+                    randomized_search = RandomizedSearchCV(
+                        model,  # Choose just the model and not the imputer
+                        param_distributions=param_distribution_final,
+                        n_iter=hyperparameter_settings["n_iter"],
+                        scoring=hyperparameter_settings["scoring"],
+                        cv=cv,
+                        random_state=42,
+                        n_jobs=hyperparameter_settings["n_jobs"],
+                        verbose=3,
+                        refit=hyperparameter_settings["scoring"][0],
+                    ).fit(X_train, y_train)
 
                     # Apply cross validation to get the best baseline model to be then further optimized
                     cv_results = cross_validate(
-                        pipeline,
+                        randomized_search,
                         X_train,
                         y_train,
                         cv=cv,
@@ -200,53 +226,56 @@ class ModelTraining:
                         return_train_score=True,
                         error_score="raise",
                     )
-
+                    cv_results_dict[model_name] = cv_results
                     # This "test_scoring_type" is actually the validation set. The actual test set will only be used to calculate the final classification report to avoid data leakage.Do note that if more scorings are added to the list, only the first one will be used to evaluate the best model score
 
                     eval_score = hyperparameter_settings["scoring"][0]
+                    cv_results_test = cv_results[f"test_{eval_score}"]
+                    current_model_score = cv_results_test.mean()
+
                     logger.info(
-                        f"Score being used to calculate the best validation score is: {eval_score}"
+                        f"Score being used to calculate the best validation score is {eval_score} and reached a mean score for the CV of {current_model_score}. \n Generalization score for {model_name} with hyperparameters tuning:\n"
+                        f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}."
                     )
 
-                    current_model_score = cv_results[f"test_{eval_score}"].mean()
-
+                    # TODO: check notebook sklearn to add std from cv results to add to the plot with the balance accuracy results from all models.absolutely. Create a dictionary that saves the results of all the models (Cv_results) so I can then save the balance_accuracy of each model with a std.
                     if current_model_score > best_score:
                         best_score = current_model_score
-                        best_baseline_model = pipeline
+                        best_baseline_model = randomized_search
                         param_distribution = model_utils["hyperparameters"][
                             "param_distribution"
                         ]
                         best_baseline_model_cv_results = cv_results
-        # Optimizing the best baseline model on training data
-        logger.info(
-            f"Optimizing best baseline model using RandomizedSearchCV. \n Best baseline model is: {best_baseline_model}"
-        )
+        # # Optimizing the best baseline model on training data
+        # logger.info(
+        #     f"Optimizing best baseline model using RandomizedSearchCV. \n Best baseline model is: {best_baseline_model}"
+        # )
 
-        # Transform strings in the param_distribution to actual ranges
-        param_distribution_final = {
-            key: (
-                eval(value)
-                if isinstance(value, str) and value.startswith("np.")
-                else value
-            )
-            for key, value in param_distribution.items()
-        }
+        # # Transform strings in the param_distribution to actual ranges
+        # param_distribution_final = {
+        #     key: (
+        #         eval(value)
+        #         if isinstance(value, str) and value.startswith("np.")
+        #         else value
+        #     )
+        #     for key, value in param_distribution.items()
+        # }
 
-        randomized_search = RandomizedSearchCV(
-            best_baseline_model,  # Choose just the model and not the imputer
-            param_distributions=param_distribution_final,
-            n_iter=hyperparameter_settings["n_iter"],
-            scoring=hyperparameter_settings["scoring"],
-            cv=cv,
-            random_state=42,
-            n_jobs=hyperparameter_settings["n_jobs"],
-            verbose=3,
-            refit=hyperparameter_settings["scoring"][0],
-        ).fit(X_train, y_train)
+        # randomized_search = RandomizedSearchCV(
+        #     best_baseline_model,  # Choose just the model and not the imputer
+        #     param_distributions=param_distribution_final,
+        #     n_iter=hyperparameter_settings["n_iter"],
+        #     scoring=hyperparameter_settings["scoring"],
+        #     cv=cv,
+        #     random_state=42,
+        #     n_jobs=hyperparameter_settings["n_jobs"],
+        #     verbose=3,
+        #     refit=hyperparameter_settings["scoring"][0],
+        # ).fit(X_train, y_train)
 
         # Get information for the best optimized model
-        best_model = randomized_search.best_estimator_
-        best_model_name = list(best_model.named_steps.keys())[0]
+        best_model = best_baseline_model.best_estimator_
+        best_model_name = best_model.__class__.__name__
 
         # Get test score (no need for this as its already in the classifiction report down below)
         test_score = best_model.score(X_test, y_test)

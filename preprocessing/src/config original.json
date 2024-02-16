@@ -614,7 +614,7 @@
                 "penalty": ["l1", "l2"],
                 "C": "np.logspace(-3, 2, 6)",
                 "solver": ["liblinear", "saga"],
-                "max_iter": [1000]
+                "max_iter": [250]
               }
             }
           }
@@ -694,8 +694,10 @@
               "param_distribution": {
                 "criterion": ["gini", "entropy"],
                 "splitter": ["best", "random"],
+                "max_depth": [null, 5, 10, 15, 20],
                 "min_samples_split": [2, 5, 10],
                 "min_samples_leaf": [1, 2, 4],
+                "max_features": ["auto", "sqrt", "log2", null],
                 "class_weight": [null, "balanced"]
               }
             }
@@ -722,10 +724,14 @@
               "param_distribution": {
                 "n_estimators": [10, 50, 100, 200, 300],
                 "criterion": ["gini", "entropy"],
+                "max_depth": "np.arange(1,50,5)",
                 "min_samples_split": [2, 5, 10, 15, 20],
                 "min_samples_leaf": [1, 2, 4, 6, 8, 10],
-                "max_leaf_nodes": [50, 100, 200],
-                "min_impurity_decrease": "np.logspace(-5, 0, 6)"
+                "max_features": ["auto", "sqrt", "log2", "None"],
+                "min_weight_fraction_leaf": "np.arange(0, 0.5)",
+                "max_leaf_nodes": ["None", 50, 100, 200],
+                "min_impurity_decrease": "np.logspace(-5, 0, 6)",
+                "ccp_alpha": "np.logspace(-4, 0, 5)"
               }
             }
           },
@@ -748,12 +754,16 @@
               },
               "param_distribution": {
                 "learning_rate": "np.logspace(-3, 0, 4)",
+                "max_iter": [50, 100, 200, 300],
                 "max_leaf_nodes": [15, 31, 63, 127],
                 "max_depth": ["None", 10, 20, 30],
                 "min_samples_leaf": [1, 2, 4],
+                "l2_regularization": "np.logspace(-5, 10, 6)",
                 "max_bins": [5, 10, 100, 150, 200, 255],
-                "scoring": ["balanced_accuracy"],
+                "scoring": ["loss", "accuracy", "roc_auc"],
+                "validation_fraction": "np.arange(0.1, 0.4)",
                 "n_iter_no_change": [5, 10, 20],
+                "tol": "np.logspace(-6, -2, 5)",
                 "verbose": [3]
               }
             }
@@ -841,6 +851,7 @@
               "param_distribution": {
                 "randomforestclassifier__n_estimators": [10, 50, 100, 200, 300],
                 "randomforestclassifier__criterion": ["gini", "entropy"],
+                "randomforestclassifier__max_depth": "np.arange(1,50,5)",
                 "randomforestclassifier__min_samples_split": [2, 5, 10, 15, 20],
                 "randomforestclassifier__min_samples_leaf": [1, 2, 4, 6, 8, 10],
                 "randomforestclassifier__max_features": [
@@ -849,7 +860,15 @@
                   "log2",
                   "None"
                 ],
-                "randomforestclassifier__max_leaf_nodes": ["None", 50, 100, 200]
+                "randomforestclassifier__min_weight_fraction_leaf": "np.arange(0, 0.5)",
+                "randomforestclassifier__max_leaf_nodes": [
+                  "None",
+                  50,
+                  100,
+                  200
+                ],
+                "randomforestclassifier__min_impurity_decrease": "np.logspace(-5, 0, 6)",
+                "randomforestclassifier__ccp_alpha": "np.logspace(-4, 0, 5)"
               }
             }
           },
@@ -871,6 +890,7 @@
               },
               "param_distribution": {
                 "histgradientboostingclassifier__learning_rate": "np.logspace(-3, 0, 4)",
+                "histgradientboostingclassifier__max_iter": [50, 100, 200, 300],
                 "histgradientboostingclassifier__max_leaf_nodes": [
                   15, 31, 63, 127
                 ],
@@ -890,7 +910,9 @@
                   "accuracy",
                   "roc_auc"
                 ],
+                "histgradientboostingclassifier__validation_fraction": "np.arange(0.1, 0.4)",
                 "histgradientboostingclassifier__n_iter_no_change": [5, 10, 20],
+                "histgradientboostingclassifier__tol": "np.logspace(-6, -2, 5)",
                 "histgradientboostingclassifier__verbose": [3]
               }
             }
