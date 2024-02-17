@@ -617,6 +617,83 @@
                 "max_iter": [1000]
               }
             }
+          },
+          "SGDClassifier": {
+            "use_for_ensemble": 0,
+            "usage": 0,
+            "run_feature_selection": true,
+            "hyperparameters": {
+              "hyperparameter_settings": {
+                "n_iter": 3,
+                "scoring": ["balanced_accuracy"],
+                "cv": {
+                  "RepeatedStratifiedKFold": {
+                    "n_splits": 5,
+                    "n_repeats": 2,
+                    "random_state": 0
+                  }
+                },
+                "n_jobs": 2
+              },
+              "param_distribution": {
+                "penalty": ["l1", "l2"],
+                "C": "np.logspace(-3, 2, 6)",
+                "solver": ["liblinear", "saga"],
+                "max_iter": [1000]
+              }
+            }
+          },
+          "RidgeClassifier": {
+            "use_for_ensemble": 0,
+            "usage": 0,
+            "run_feature_selection": true,
+            "hyperparameters": {
+              "hyperparameter_settings": {
+                "n_iter": 3,
+                "scoring": ["balanced_accuracy"],
+                "cv": {
+                  "RepeatedStratifiedKFold": {
+                    "n_splits": 5,
+                    "n_repeats": 2,
+                    "random_state": 0
+                  }
+                },
+                "n_jobs": 2
+              },
+              "param_distribution": {
+                "penalty": ["l1", "l2"],
+                "C": "np.logspace(-3, 2, 6)",
+                "solver": ["liblinear", "saga"],
+                "max_iter": [1000]
+              }
+            }
+          }
+        },
+        "neighbors": {
+          "KNeighborsClassifier": {
+            "use_for_ensemble": 0,
+            "usage": 0,
+            "run_feature_selection": true,
+            "hyperparameters": {
+              "hyperparameter_settings": {
+                "n_iter": 3,
+                "scoring": ["balanced_accuracy"],
+                "cv": {
+                  "RepeatedStratifiedKFold": {
+                    "n_splits": 5,
+                    "n_repeats": 2,
+                    "random_state": 0
+                  }
+                },
+                "n_jobs": 2
+              },
+              "param_distribution": {
+                "penalty": ["l1", "l2"],
+                "C": "np.logspace(-3, 2, 6)",
+                "solver": ["liblinear", "saga"],
+                "max_iter": [1000]
+              }
+            }
           }
         },
         "svm": {
@@ -731,7 +808,7 @@
           },
           "HistGradientBoostingClassifier": {
             "use_for_ensemble": 0,
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "hyperparameter_settings": {
@@ -747,10 +824,8 @@
                 "n_jobs": 2
               },
               "param_distribution": {
-                "learning_rate": "np.logspace(-3, 0, 4)",
                 "max_leaf_nodes": [15, 31, 63, 127],
                 "max_depth": ["None", 10, 20, 30],
-                "min_samples_leaf": [1, 2, 4],
                 "max_bins": [5, 10, 100, 150, 200, 255],
                 "scoring": ["balanced_accuracy"],
                 "n_iter_no_change": [5, 10, 20],
@@ -758,48 +833,12 @@
               }
             }
           }
-        }
-      }
-    },
-    "regression": {
-      "usage": 0,
-      "train_test_split": {
-        "validation_size": 0.3,
-        "test_size": 0.5,
-        "shuffle": true,
-        "stratify": true
-      },
-      "models": {
-        "linear_model": {
-          "LogisticRegression": {
-            "use_for_ensemble": 0,
-            "usage": 1,
-            "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["balanced_accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 5,
-                    "n_repeats": 2,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
-              "param_distribution": {
-                "logisticregression__penalty": ["l1", "l2"],
-                "logisticregression__C": "np.logspace(-3, 2, 6)",
-                "logisticregression__solver": ["liblinear", "saga"],
-                "logisticregression__max_iter": [10000]
-              }
-            }
-          }
         },
-        "tree": {
-          "DecisionTreeClassifier": {
+        "neural_network": {
+          "MLPClassifier": {
             "use_for_ensemble": 0,
             "usage": 0,
+            "run_feature_selection": false,
             "hyperparameters": {
               "hyperparameter_settings": {
                 "n_iter": 3,
@@ -814,84 +853,9 @@
                 "n_jobs": 2
               },
               "param_distribution": {
-                "logisticregression__penalty": ["l1", "l2"],
-                "logisticregression__C": "np.logspace(-3, 2, 6)",
-                "logisticregression__solver": ["liblinear", "saga"]
-              }
-            }
-          }
-        },
-        "ensemble": {
-          "RandomForestClassifier": {
-            "use_for_ensemble": 0,
-            "usage": 1,
-            "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["balanced_accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 5,
-                    "n_repeats": 2,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
-              "param_distribution": {
-                "randomforestclassifier__n_estimators": [10, 50, 100, 200, 300],
-                "randomforestclassifier__criterion": ["gini", "entropy"],
-                "randomforestclassifier__min_samples_split": [2, 5, 10, 15, 20],
-                "randomforestclassifier__min_samples_leaf": [1, 2, 4, 6, 8, 10],
-                "randomforestclassifier__max_features": [
-                  "auto",
-                  "sqrt",
-                  "log2",
-                  "None"
-                ],
-                "randomforestclassifier__max_leaf_nodes": ["None", 50, 100, 200]
-              }
-            }
-          },
-          "HistGradientBoostingClassifier": {
-            "use_for_ensemble": 0,
-            "usage": 1,
-            "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["balanced_accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 5,
-                    "n_repeats": 2,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
-              "param_distribution": {
-                "histgradientboostingclassifier__learning_rate": "np.logspace(-3, 0, 4)",
-                "histgradientboostingclassifier__max_leaf_nodes": [
-                  15, 31, 63, 127
-                ],
-                "histgradientboostingclassifier__max_depth": [
-                  "None",
-                  10,
-                  20,
-                  30
-                ],
-                "histgradientboostingclassifier__min_samples_leaf": [1, 2, 4],
-                "histgradientboostingclassifier__l2_regularization": "np.logspace(-5, 10, 6)",
-                "histgradientboostingclassifier__max_bins": [
-                  5, 10, 100, 150, 200, 255
-                ],
-                "histgradientboostingclassifier__scoring": [
-                  "loss",
-                  "accuracy",
-                  "roc_auc"
-                ],
-                "histgradientboostingclassifier__n_iter_no_change": [5, 10, 20],
-                "histgradientboostingclassifier__verbose": [3]
+                "alpha": [
+                  1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 0.001, 0.01, 0.1, 0.5, 1
+                ]
               }
             }
           }

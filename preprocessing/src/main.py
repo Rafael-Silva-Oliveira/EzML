@@ -58,14 +58,17 @@ date = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 
 class Orchestrator(object):
 
-    def __init__(self, config, path_backbone, data_dict):
+    def __init__(self, config, path_backbone, data_dict, saving_path):
         self.config = config
         self.path_backbone = path_backbone
         self.data_dict = data_dict
+        self.saving_path = saving_path
 
     def run_ExploratoryAnalysis(self) -> dict:
         config = self.config["ead"]
-        ExploratoryAnalysisPipeline = ExploratoryAnalysis(config=config)
+        ExploratoryAnalysisPipeline = ExploratoryAnalysis(
+            config=config, saving_path=self.saving_path
+        )
 
         result_dictionary = {}
 
@@ -102,7 +105,9 @@ class Orchestrator(object):
         config = self.config["modelling"]
         data = self.data_dict["preprocessed_data"].copy()
 
-        ModelTrainingPipeline = ModelTraining(config=config)
+        ModelTrainingPipeline = ModelTraining(
+            config=config, saving_path=self.saving_path
+        )
         features = config["data"]["features"]
         target = config["data"]["target"]
 
@@ -134,7 +139,7 @@ class Orchestrator(object):
             y_decoded = label_encoder.inverse_transform(y_encoded)
             y = pd.DataFrame(y_encoded, columns=[target])
 
-        ModelTrainingPipeline = ModelTraining(config)
+        ModelTrainingPipeline = ModelTraining(config, self.saving_path)
 
         # Split data into trainind, validation and test data
         X_train, X_test, y_train, y_test = ModelTrainingPipeline.tabular_data_split(
@@ -142,11 +147,21 @@ class Orchestrator(object):
         )
         # Get best baseline model and optimize it
         if modelling_problem_type == "classification":
-            baseline_model = ModelTrainingPipeline.find_best_clf(
+            best_clf, cv_results_dict, param_distribution, label_encoder, X_test_new = (
+                ModelTrainingPipeline.train_and_optimize_clf(
+                    model_settings,
+                    X_train,
+                    X_test,
+                    y_train,
+                    y_test,
+                    modelling_problem_type,
+                    label_encoder,
+                )
+            )
+            results = ModelTrainingPipeline.predict_clf(
+                best_clf,
                 model_settings,
-                X_train,
-                X_test,
-                y_train,
+                X_test_new,
                 y_test,
                 modelling_problem_type,
                 label_encoder,
@@ -197,7 +212,10 @@ def main(CONFIG_PATH: str):
 
     data_dict = {"raw_data": data}
     ORCHESTRATOR = Orchestrator(
-        config=config, path_backbone=path_backbone, data_dict=data_dict
+        config=config,
+        path_backbone=path_backbone,
+        data_dict=data_dict,
+        saving_path=curr_dir,
     )
     ORCHESTRATOR.run_ExploratoryAnalysis()
     ORCHESTRATOR.run_PreProcessor()

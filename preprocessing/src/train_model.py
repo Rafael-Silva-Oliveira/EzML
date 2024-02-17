@@ -20,7 +20,14 @@ from sklearn.linear_model import (
     LinearRegression,
     LogisticRegression,
     RidgeCV,
+    SGDClassifier,
+    RidgeClassifier,
 )
+from sklearn.neighbors import KNeighborsClassifier
+
+# from xgboost import XGBClassifier
+from sklearn.neural_network import MLPClassifier
+
 from sklearn.naive_bayes import (
     GaussianNB,
     CategoricalNB,
@@ -57,8 +64,9 @@ from utils import _return_values_to_use, _return_cross_validation
 
 
 class ModelTraining:
-    def __init__(self, config):
+    def __init__(self, config, saving_path):
         self.config = config
+        self.saving_path = saving_path
 
     def tabular_data_split(self, X, y, modelling_problem_type):
         logger.info(f"Creating data splits for model training.")
@@ -105,7 +113,7 @@ class ModelTraining:
         )
         return X_train, X_test, y_train, y_test
 
-    def find_best_clf(
+    def train_and_optimize_clf(
         self,
         model_settings,
         X_train,
@@ -123,6 +131,7 @@ class ModelTraining:
         cv_results_dict = {}
         plotting_metrics = {}
         models = model_settings["models"]
+        best_model_selected_features = None
 
         # Load dummy classifier with most frequent categorization and use the score as baseline
         strategy = "most_frequent"
@@ -238,7 +247,7 @@ class ModelTraining:
                         f"Score being used to calculate the best validation score is {eval_score} and reached a mean score for the CV of {current_model_score}. \n Generalization score for {model_name} with hyperparameters tuning:\n"
                         f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}."
                     )
-                    plotting_metrics["LogisticRegression"] = {
+                    plotting_metrics[model_name] = {
                         f"test_{eval_score}": current_model_score,
                         "std": cv_results_test.std(),
                     }
@@ -251,32 +260,26 @@ class ModelTraining:
                             "param_distribution"
                         ]
                         best_baseline_model_cv_results = cv_results
-        # # Optimizing the best baseline model on training data
-        # logger.info(
-        #     f"Optimizing best baseline model using RandomizedSearchCV. \n Best baseline model is: {best_baseline_model}"
-        # )
+                        best_model_X_test = X_test
+        self.plot_CV_results(eval_score, plotting_metrics, self.saving_path)
 
-        # # Transform strings in the param_distribution to actual ranges
-        # param_distribution_final = {
-        #     key: (
-        #         eval(value)
-        #         if isinstance(value, str) and value.startswith("np.")
-        #         else value
-        #     )
-        #     for key, value in param_distribution.items()
-        # }
+        return (
+            best_baseline_model,
+            cv_results_dict,
+            param_distribution,
+            label_encoder,
+            best_model_X_test,
+        )
 
-        # randomized_search = RandomizedSearchCV(
-        #     best_baseline_model,  # Choose just the model and not the imputer
-        #     param_distributions=param_distribution_final,
-        #     n_iter=hyperparameter_settings["n_iter"],
-        #     scoring=hyperparameter_settings["scoring"],
-        #     cv=cv,
-        #     random_state=42,
-        #     n_jobs=hyperparameter_settings["n_jobs"],
-        #     verbose=3,
-        #     refit=hyperparameter_settings["scoring"][0],
-        # ).fit(X_train, y_train)
+    def predict_clf(
+        self,
+        best_baseline_model,
+        model_settings,
+        X_test,
+        y_test,
+        modelling_problem_type,
+        label_encoder,
+    ):
 
         # Get information for the best optimized model
         best_model = best_baseline_model.best_estimator_
@@ -318,35 +321,26 @@ class ModelTraining:
 
         date = datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
 
-        new_path = r"{}/OneDrive - NTNU/Documents/Projects/preprocessing/preprocessing/preprocessing/data/processed/metrics_results/{}".format(
-            Path.home(), modelling_problem_type
-        )
-        isExist = os.path.exists(new_path)
-        if not isExist:
-            # Create a new directory because it/ does not exist
-            os.makedirs(new_path)
-            print(
-                f"The new directory is created. You can now check the metrics_results for {best_model_name} in this directory {new_path}"
-            )
+        # new_path = r"{}/OneDrive - NTNU/Documents/Projects/preprocessing/preprocessing/preprocessing/data/processed/metrics_results/{}".format(
+        #     Path.home(), modelling_problem_type
+        # )
+        # isExist = os.path.exists(new_path)
+        # if not isExist:
+        #     # Create a new directory because it/ does not exist
+        #     os.makedirs(new_path)
+        #     print(
+        #         f"The new directory is created. You can now check the metrics_results for {best_model_name} in this directory {new_path}"
+        #     )
         results.to_excel(
-            r"{}/{}_{}_{}.xlsx".format(
-                new_path, modelling_problem_type, best_model_name, date
+            r"{}/Files/{}_{}_{}.xlsx".format(
+                self.saving_path, modelling_problem_type, best_model_name, date
             )
         )
-        self.plot_CV_results(eval_score, plotting_results, saving_path)
+
+        return results
 
     # TODO: add validation curve to check for overfitting
     # TODO: save best model as JSON
-
-    def find_best_reg(self, model_settings, X_train, X_test, y_train, y_test):
-        logger.info(f"Creating data splits for model training.")
-
-        ...
-
-    def nested_cross_validation(self):
-        logger.info(f"Creating data splits for model training.")
-
-        ...
 
     def ensemble_pipeline(self): ...
 
@@ -397,7 +391,7 @@ class ModelTraining:
 
     def feature_engineering(self): ...
 
-    def plot_CV_results(self, eval_score, plotting_metrics):
+    def plot_CV_results(self, eval_score, plotting_metrics, saving_path):
 
         import pandas as pd
         import matplotlib.pyplot as plt
@@ -445,3 +439,5 @@ class ModelTraining:
         plt.title("Model Comparison for Classification")
 
         plt.show()
+        with plt.rc_context():  # Use this to set figure params like size and dpi
+            plt.savefig(f"{saving_path}\\RankedModelsByMetric.png", bbox_inches="tight")

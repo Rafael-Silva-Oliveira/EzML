@@ -4,8 +4,9 @@ from ydata_profiling import ProfileReport
 
 class ExploratoryAnalysis(object):
 
-    def __init__(self, config):
+    def __init__(self, config, saving_path):
         self.config = config
+        self.saving_path = saving_path
 
     def pandas_profiling(self, data):
 
