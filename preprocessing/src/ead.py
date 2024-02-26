@@ -10,8 +10,8 @@ class ExploratoryAnalysis(object):
 
     def pandas_profiling(self, data):
 
-        profile = ProfileReport(data, title="Profiling Report")
-        profile.to_file("your_report.html")
+        profile = ProfileReport(data, title="Profiling Report", minimal=True)
+        profile.to_file(f"{self.saving_path}\\Files\\BreastCancerReport.html")
 
         return profile
 

@@ -22,6 +22,7 @@ from sklearn.linear_model import (
     RidgeCV,
     SGDClassifier,
     RidgeClassifier,
+    Perceptron,
 )
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -50,6 +51,10 @@ from sklearn.feature_selection import (
     f_classif,
     RFECV,
 )
+
+from sklearn.inspection import DecisionBoundaryDisplay
+import matplotlib.pyplot as plt
+
 import importlib
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import classification_report
@@ -61,6 +66,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.preprocessing import LabelEncoder
 
 from utils import _return_values_to_use, _return_cross_validation
+import copy
 
 
 class ModelTraining:
@@ -70,6 +76,8 @@ class ModelTraining:
 
     def tabular_data_split(self, X, y, modelling_problem_type):
         logger.info(f"Creating data splits for model training.")
+        logger.info(f"Data shape: {X.shape}")
+        logger.info(f"Label distribution:\n{y.value_counts()}")
 
         # Select settings for each modelling problem
         if modelling_problem_type == "classification":
@@ -85,10 +93,23 @@ class ModelTraining:
             logger.warning(
                 f"Shuffle is currently set to {shuffle}. If you're using time-series data, this is not advisable."
             )
-
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=test_size, random_state=0, shuffle=shuffle
-            )
+            if stratify:
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X,
+                    y,
+                    test_size=test_size,
+                    random_state=0,
+                    shuffle=shuffle,
+                    stratify=y,
+                )
+            else:
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X,
+                    y,
+                    test_size=test_size,
+                    random_state=0,
+                    shuffle=shuffle,
+                )
             # X_val, X_test, y_val, y_test = train_test_split(
             #     X_hold_out, y_hold_out, test_size=test, shuffle=shuffle, random_state=0)
 
@@ -102,9 +123,23 @@ class ModelTraining:
                 self.config[modelling_problem_type]["train_test_split"]["stratify"],
             ]
 
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=test_size, random_state=0, shuffle=shuffle
-            )
+            if stratify:
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X,
+                    y,
+                    test_size=test_size,
+                    random_state=0,
+                    shuffle=shuffle,
+                    stratify=y,
+                )
+            else:
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X,
+                    y,
+                    test_size=test_size,
+                    random_state=0,
+                    shuffle=shuffle,
+                )
             # X_val, X_test, y_val, y_test = train_test_split(
             #     X_hold_out, y_hold_out, test_size=test, shuffle=shuffle, random_state=0)
 
@@ -154,6 +189,10 @@ class ModelTraining:
                 if model_utils["usage"] == 1:
                     logger.info(f"Running {model_name}. ")
 
+                    X_train_cp = copy.deepcopy(X_train)
+                    X_test_cp = copy.deepcopy(X_test)
+                    y_train_cp = copy.deepcopy(y_train)
+
                     model = getattr(
                         importlib.import_module(f"sklearn.{model_type}"), model_name
                     )()
@@ -177,12 +216,15 @@ class ModelTraining:
                             selectors[0],
                             model,
                             self.config,
-                            X_train,
-                            y_train,
+                            X_train_cp,
+                            y_train_cp,
                         )
-                        X_train, X_test = (
-                            X_train[selected_features],
-                            X_test[selected_features],
+                        X_train_cp, X_test_cp = (
+                            X_train_cp[selected_features],
+                            X_test_cp[selected_features],
+                        )
+                        logger.info(
+                            f"Length of selected features for {model_name} is {len(selected_features)}"
                         )
 
                     pipeline = make_pipeline(model)
@@ -213,44 +255,78 @@ class ModelTraining:
                     # Load cross validation strategy dynamically
                     cv = _return_cross_validation(hyperparameter_settings)
 
+                    # Optimize hyperparameters
                     randomized_search = RandomizedSearchCV(
                         model,  # Choose just the model and not the imputer
                         param_distributions=param_distribution_final,
                         n_iter=hyperparameter_settings["n_iter"],
                         scoring=hyperparameter_settings["scoring"],
                         cv=cv,
-                        random_state=42,
+                        random_state=0,
                         n_jobs=hyperparameter_settings["n_jobs"],
                         verbose=3,
                         refit=hyperparameter_settings["scoring"][0],
-                    ).fit(X_train, y_train)
-
-                    # Apply cross validation to get the best baseline model to be then further optimized
-                    cv_results = cross_validate(
-                        randomized_search,
-                        X_train,
-                        y_train,
-                        cv=cv,
-                        scoring=hyperparameter_settings["scoring"],
-                        return_estimator=True,
                         return_train_score=True,
-                        error_score="raise",
-                    )
+                    ).fit(X_train_cp, y_train_cp)
+
+                    # Apply cross validation to get the best model
+                    if hasattr(randomized_search, "best_estimator_"):
+                        cv_results = cross_validate(
+                            randomized_search.best_estimator_,
+                            X_train_cp,
+                            y_train_cp,
+                            cv=cv,
+                            scoring=hyperparameter_settings["scoring"],
+                            return_estimator=True,
+                            return_train_score=True,
+                            error_score="raise",
+                        )
+                    else:
+                        cv_results = cross_validate(
+                            randomized_search,
+                            X_train_cp,
+                            y_train_cp,
+                            cv=cv,
+                            scoring=hyperparameter_settings["scoring"],
+                            return_estimator=True,
+                            return_train_score=True,
+                            error_score="raise",
+                        )
+
                     cv_results_dict[model_name] = cv_results
                     # This "test_scoring_type" is actually the validation set. The actual test set will only be used to calculate the final classification report to avoid data leakage.Do note that if more scorings are added to the list, only the first one will be used to evaluate the best model score
 
                     eval_score = hyperparameter_settings["scoring"][0]
                     cv_results_test = cv_results[f"test_{eval_score}"]
+                    cv_results_train = cv_results[f"train_{eval_score}"]
                     current_model_score = cv_results_test.mean()
 
                     logger.info(
-                        f"Score being used to calculate the best validation score is {eval_score} and reached a mean score for the CV of {current_model_score}. \n Generalization score for {model_name} with hyperparameters tuning:\n"
-                        f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}."
+                        f"\n\n- Score being used to calculate the best validation score is '{eval_score}' and reached a mean score for the CV of {current_model_score:.3f}. \n\n- Validation score for {model_name} with hyperparameters tuning:\n"
+                        f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}.\n\n- Training score for {model_name} with hyperparameters tuning:\n"
+                        f"{cv_results_train.mean():.3f} ± {cv_results_train.std():.3f}."
                     )
                     plotting_metrics[model_name] = {
                         f"test_{eval_score}": current_model_score,
                         "std": cv_results_test.std(),
                     }
+
+                    # Plot CM
+                    self.plot_conf_matrix(
+                        randomized_search,
+                        X_train_cp,
+                        y_train_cp,
+                        model_name=model_name,
+                        prefix="Training",
+                    )
+                    self.plot_training_curves(
+                        randomized_search,
+                        eval_score=eval_score,
+                        test_label_name="val",
+                        model_name=model_name,
+                        cv_results=cv_results,
+                        use_from_cross_val=False,
+                    )
 
                     # TODO: check notebook sklearn to add std from cv results to add to the plot with the balance accuracy results from all models.absolutely. Create a dictionary that saves the results of all the models (Cv_results) so I can then save the balance_accuracy of each model with a std.
                     if current_model_score > best_score:
@@ -260,8 +336,12 @@ class ModelTraining:
                             "param_distribution"
                         ]
                         best_baseline_model_cv_results = cv_results
-                        best_model_X_test = X_test
-        self.plot_CV_results(eval_score, plotting_metrics, self.saving_path)
+                        best_model_X_test = X_test_cp
+
+                    # TODO: add the saving results here as well for the training set.
+        self.plot_CV_results(
+            eval_score, plotting_metrics, self.saving_path, prefix="Evaluation"
+        )
 
         return (
             best_baseline_model,
@@ -295,7 +375,9 @@ class ModelTraining:
         y_test_decoded = label_encoder.inverse_transform(y_test)
         y_pred_decoded = label_encoder.inverse_transform(y_pred)
 
-        logger.info("Calculating classification report on test dataset.")
+        logger.info(
+            f"Calculating classification report on the unseen test dataset with the best optimized model: {best_model_name}."
+        )
 
         # Get classification report on test data (avoids data leakage)
         try:
@@ -321,20 +403,13 @@ class ModelTraining:
 
         date = datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
 
-        # new_path = r"{}/OneDrive - NTNU/Documents/Projects/preprocessing/preprocessing/preprocessing/data/processed/metrics_results/{}".format(
-        #     Path.home(), modelling_problem_type
-        # )
-        # isExist = os.path.exists(new_path)
-        # if not isExist:
-        #     # Create a new directory because it/ does not exist
-        #     os.makedirs(new_path)
-        #     print(
-        #         f"The new directory is created. You can now check the metrics_results for {best_model_name} in this directory {new_path}"
-        #     )
         results.to_excel(
             r"{}/Files/{}_{}_{}.xlsx".format(
                 self.saving_path, modelling_problem_type, best_model_name, date
             )
+        )
+        self.plot_conf_matrix(
+            best_model, X_test, y_test, model_name=best_model_name, prefix="Test"
         )
 
         return results
@@ -344,9 +419,47 @@ class ModelTraining:
 
     def ensemble_pipeline(self): ...
 
-    def generalization_clf_metrics(self): ...
+    def plot_conf_matrix(self, clf, X, y, model_name, prefix):
+        from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-    def generalization_reg_metrics(self): ...
+        if hasattr(clf, "best_estimator_"):
+            disp = ConfusionMatrixDisplay.from_estimator(clf.best_estimator_, X, y)
+        else:
+            disp = ConfusionMatrixDisplay.from_estimator(clf, X, y)
+
+        disp.ax_.set_title(f"{prefix} Confusion Matrix for {model_name}")
+        # plt.show()
+        with plt.rc_context():  # Use this to set figure params like size and dpi
+            plt.savefig(
+                f"{self.saving_path}\\Plots\\{prefix}_ConfMatrix_{model_name}.png",
+                bbox_inches="tight",
+            )
+        plt.close()
+
+    def plot_training_curves(
+        self,
+        clf,
+        test_label_name,
+        eval_score,
+        model_name,
+        cv_results,
+        use_from_cross_val=False,
+    ):
+
+        val_scores = clf.cv_results_[f"mean_test_{eval_score}"]
+        train_scores = clf.cv_results_[f"mean_train_{eval_score}"]
+
+        plt.plot(val_scores, label=test_label_name)
+        plt.plot(train_scores, label="train")
+        plt.title(f"Validation Curve for {model_name} using {eval_score}.")
+        plt.legend(loc="best")
+        # plt.show()
+        with plt.rc_context():  # Use this to set figure params like size and dpi
+            plt.savefig(
+                f"{self.saving_path}\\Plots\\TrainingCurve_{model_name}.png",
+                bbox_inches="tight",
+            )
+        plt.close()
 
     def feature_selection(self, selector_type, model, config, X_train, y_train):
 
@@ -391,10 +504,9 @@ class ModelTraining:
 
     def feature_engineering(self): ...
 
-    def plot_CV_results(self, eval_score, plotting_metrics, saving_path):
+    def plot_CV_results(self, eval_score, plotting_metrics, saving_path, prefix):
 
         import pandas as pd
-        import matplotlib.pyplot as plt
 
         # Extracting data from the dictionary
         names = list(plotting_metrics.keys())
@@ -436,8 +548,10 @@ class ModelTraining:
         ax.spines["bottom"].set_color("#CCCCCC")
         ax.set_xlabel(f"test_{eval_score}", fontsize=12)
         ax.set_ylabel("Model", fontsize=12)
-        plt.title("Model Comparison for Classification")
+        plt.title(f"Model Comparison for Classification in {prefix}")
 
         plt.show()
         with plt.rc_context():  # Use this to set figure params like size and dpi
-            plt.savefig(f"{saving_path}\\RankedModelsByMetric.png", bbox_inches="tight")
+            plt.savefig(
+                f"{saving_path}\\Plots\\RankedModelsByMetric.png", bbox_inches="tight"
+            )

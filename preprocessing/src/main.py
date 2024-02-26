@@ -122,7 +122,14 @@ class Orchestrator(object):
         model_settings = config[modelling_problem_type]
 
         # Load full dataset
+
         data.fillna(0, inplace=True)
+
+        # Drop all rows that contain NA
+        # logger.info(f"Data shape before dropping NAs {data.shape}")
+        # data.dropna(inplace=True)
+        # logger.info(f"Data shape after dropping NAs {data.shape}")
+
         if "all" in features:
             features = data.columns.tolist()
             features.remove(target)
@@ -215,7 +222,7 @@ def main(CONFIG_PATH: str):
         config=config,
         path_backbone=path_backbone,
         data_dict=data_dict,
-        saving_path=curr_dir,
+        saving_path=directory,
     )
     ORCHESTRATOR.run_ExploratoryAnalysis()
     ORCHESTRATOR.run_PreProcessor()

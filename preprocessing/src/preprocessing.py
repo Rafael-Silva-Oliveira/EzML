@@ -9,6 +9,7 @@ from sklearn.preprocessing import (
     OrdinalEncoder,
     StandardScaler,
     MinMaxScaler,
+    LabelEncoder,
 )
 from sklearn.compose import make_column_selector as selector
 from sklearn.compose import ColumnTransformer
@@ -36,6 +37,7 @@ class PreProcessor:
                 "OrdinalEncoder": OrdinalEncoder(
                     handle_unknown="use_encoded_value", unknown_value=-1
                 ),
+                "LabelEncoder": LabelEncoder(),
             }
             curr_settings = self.config["categorical_preprocessing"]
             # Select all columns that are type object (categorical)
