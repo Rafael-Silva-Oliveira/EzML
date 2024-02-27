@@ -18,16 +18,6 @@
       "LabelEncoder": { "include": null, "exclude": null }
     }
   },
-  "ead": {
-    "pandas_profiling_report": {
-      "usage": false,
-      "params": {}
-    },
-    "statistics": {
-      "usage": false
-    },
-    "plotting": {}
-  },
   "modelling": {
     "data": {
       "target": "overall_survival",
@@ -592,10 +582,12 @@
         "shuffle": true,
         "stratify": true
       },
+      "DummyClassifier": {
+        "strategy": "most_frequent"
+      },
       "models": {
         "linear_model": {
           "LogisticRegression": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": true,
             "hyperparameters": {
@@ -615,12 +607,11 @@
                 "penalty": ["l1", "l2"],
                 "C": "np.logspace(-3, 2, 6)",
                 "solver": ["liblinear", "saga"],
-                "max_iter": [1000]
+                "max_iter": [10000]
               }
             }
           },
           "Perceptron": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": true,
             "hyperparameters": {
@@ -648,7 +639,6 @@
             }
           },
           "SGDClassifier": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": true,
             "hyperparameters": {
@@ -687,7 +677,6 @@
             }
           },
           "RidgeClassifier": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": true,
             "hyperparameters": {
@@ -721,7 +710,6 @@
         },
         "neighbors": {
           "KNeighborsClassifier": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": false,
             "hyperparameters": {
@@ -749,7 +737,6 @@
         },
         "svm": {
           "SVC": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": false,
             "hyperparameters": {
@@ -777,7 +764,6 @@
         },
         "naive_bayes": {
           "ComplementNB": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": false,
             "hyperparameters": {
@@ -803,7 +789,6 @@
         },
         "tree": {
           "DecisionTreeClassifier": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": false,
             "hyperparameters": {
@@ -831,7 +816,6 @@
         },
         "ensemble": {
           "RandomForestClassifier": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": false,
             "hyperparameters": {
@@ -858,7 +842,6 @@
             }
           },
           "HistGradientBoostingClassifier": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": false,
             "hyperparameters": {
@@ -876,18 +859,39 @@
               },
               "param_distribution": {
                 "max_leaf_nodes": [15, 31, 63, 127],
-                "max_depth": ["None", 10, 20, 30],
+                "max_depth": [10, 20, 30],
                 "max_bins": [5, 10, 100, 150, 200, 255],
+                "scoring": ["accuracy"]
+              }
+            }
+          },
+          "AdaBoostClassifier": {
+            "usage": 1,
+            "run_feature_selection": false,
+            "hyperparameters": {
+              "hyperparameter_settings": {
+                "n_iter": 3,
                 "scoring": ["accuracy"],
-                "n_iter_no_change": [5, 10, 20],
-                "verbose": [3]
+                "cv": {
+                  "RepeatedStratifiedKFold": {
+                    "n_splits": 7,
+                    "n_repeats": 3,
+                    "random_state": 0
+                  }
+                },
+                "n_jobs": 2
+              },
+              "param_distribution": {
+                "n_estimators": [10, 50, 100, 200, 300],
+                "algorithm": ["SAMME.R"],
+                "learning_rate": "np.logspace(0.01, 1.0, 5)",
+                "random_state": [0]
               }
             }
           }
         },
         "neural_network": {
           "MLPClassifier": {
-            "use_for_ensemble": 0,
             "usage": 1,
             "run_feature_selection": false,
             "hyperparameters": {
@@ -911,6 +915,31 @@
                 "max_iter": [200, 300, 500],
                 "tol": [1e-3, 1e-4, 1e-5],
                 "verbose": [true]
+              }
+            }
+          }
+        },
+        "XGBoost": {
+          "XGBClassifier": {
+            "usage": 1,
+            "run_feature_selection": false,
+            "hyperparameters": {
+              "hyperparameter_settings": {
+                "n_iter": 3,
+                "scoring": ["accuracy"],
+                "cv": {
+                  "RepeatedStratifiedKFold": {
+                    "n_splits": 7,
+                    "n_repeats": 3,
+                    "random_state": 0
+                  }
+                },
+                "n_jobs": 2
+              },
+              "param_distribution": {
+                "n_estimators": [10, 50, 100, 200, 300],
+                "max_depth": [3, 5, 7, 9, 12],
+                "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3]
               }
             }
           }

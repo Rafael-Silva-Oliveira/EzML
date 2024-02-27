@@ -1,6 +1,5 @@
 from train_model import ModelTraining
 from preprocessing import PreProcessor
-from ead import ExploratoryAnalysis
 from loguru import logger
 import os
 import pandas as pd
@@ -63,26 +62,6 @@ class Orchestrator(object):
         self.path_backbone = path_backbone
         self.data_dict = data_dict
         self.saving_path = saving_path
-
-    def run_ExploratoryAnalysis(self) -> dict:
-        config = self.config["ead"]
-        ExploratoryAnalysisPipeline = ExploratoryAnalysis(
-            config=config, saving_path=self.saving_path
-        )
-
-        result_dictionary = {}
-
-        for command, settings in config.items():
-            if settings.get("usage", True):
-                match command:
-                    case "pandas_profiling_report":
-                        p_report = ExploratoryAnalysisPipeline.pandas_profiling(
-                            data=self.data_dict["raw_data"]
-                        )
-                        self.data_dict.setdefault("pandas_report", p_report)
-                    case _:
-                        # Default case, do nothing or raise an exception
-                        pass
 
     def run_PreProcessor(self) -> dict:
         logger.warning(
@@ -165,14 +144,8 @@ class Orchestrator(object):
                     label_encoder,
                 )
             )
-            results = ModelTrainingPipeline.predict_clf(
-                best_clf,
-                model_settings,
-                X_test_new,
-                y_test,
-                modelling_problem_type,
-                label_encoder,
-            )
+            ModelTrainingPipeline.save_best_model(best_clf)
+
         elif modelling_problem_type == "regression":
             baseline_model = ModelTrainingPipeline.find_best_reg(
                 model_settings, X_train, X_test, y_train, y_test, modelling_problem_type
@@ -186,10 +159,10 @@ def main(CONFIG_PATH: str):
     path_backbone = config["path_backbone"]
     data_path = os.path.join(path_backbone, config["data"])
     data = pd.read_csv(data_path)
-    directory = path_backbone + "\\" + f"PipelineRun_{date}"
+    directory = path_backbone + "\\reports\\" + f"PipelineRun_{date}"
 
     subdirs = {
-        "Model": ["Training Data", "Optimized Model"],
+        "Model": ["Best Optimized Model"],
         "Files": [],
         "Plots": [],
     }
@@ -224,7 +197,6 @@ def main(CONFIG_PATH: str):
         data_dict=data_dict,
         saving_path=directory,
     )
-    ORCHESTRATOR.run_ExploratoryAnalysis()
     ORCHESTRATOR.run_PreProcessor()
     ORCHESTRATOR.run_ModelTraining()
 

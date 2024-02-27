@@ -25,6 +25,7 @@ from sklearn.linear_model import (
     Perceptron,
 )
 from sklearn.neighbors import KNeighborsClassifier
+import xgboost
 
 # from xgboost import XGBClassifier
 from sklearn.neural_network import MLPClassifier
@@ -42,6 +43,7 @@ from sklearn.ensemble import (
     RandomForestRegressor,
     HistGradientBoostingClassifier,
     HistGradientBoostingRegressor,
+    AdaBoostClassifier,
 )
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.feature_selection import (
@@ -57,16 +59,22 @@ import matplotlib.pyplot as plt
 
 import importlib
 from sklearn.impute import SimpleImputer
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_curve, auc
 from datetime import datetime
 import os
 from pathlib import Path
 from sklearn.dummy import DummyClassifier
 
 from sklearn.preprocessing import LabelEncoder
+from joblib import dump, load
 
 from utils import _return_values_to_use, _return_cross_validation
 import copy
+
+sns.set(font_scale=1.5)
+color = "Spectral"
+color_hist = "teal"
+sns.set_style("ticks")
 
 
 class ModelTraining:
@@ -164,20 +172,24 @@ class ModelTraining:
         param_distribution = None
         best_baseline_model_cv_results = None
         cv_results_dict = {}
-        plotting_metrics = {}
+        training_plotting_metrics = {}
+        test_plotting_metrics = {}
         models = model_settings["models"]
         best_model_selected_features = None
 
         # Load dummy classifier with most frequent categorization and use the score as baseline
-        strategy = "most_frequent"
-        dummy_clf = DummyClassifier(strategy=strategy)
+        dummy_clf = DummyClassifier(
+            strategy=model_settings["DummyClassifier"]["strategy"]
+        )
         dummy_clf.fit(X_train, y_train)
         dummy_clf.predict(X_train)
-        # Accuracy is the score being used! #TODO: add possibility of changing the metric being used
+
+        # NOTE: Accuracy is the score being used!
         best_score = dummy_clf.score(X_train, y_train)
+        dummy_score = dummy_clf.score(X_train, y_train)
 
         logger.info(
-            f"DummyClassifier with {strategy} was used to compute the baseline score for baseline model search. The DummyClassifier score is: {best_score}"
+            f"DummyClassifier with {model_settings['DummyClassifier']['strategy']} was used to compute the baseline score for baseline model search. The DummyClassifier score is: {best_score}. NOTE: The score for the dummy classifier is 'accuracy'."
         )
 
         # Transforming y data to a numpy array to avoid unnecessary warnings.
@@ -193,9 +205,12 @@ class ModelTraining:
                     X_test_cp = copy.deepcopy(X_test)
                     y_train_cp = copy.deepcopy(y_train)
 
-                    model = getattr(
-                        importlib.import_module(f"sklearn.{model_type}"), model_name
-                    )()
+                    if "XGB" in model_name:
+                        model = eval(f"xgboost.{model_name}()")
+                    else:
+                        model = getattr(
+                            importlib.import_module(f"sklearn.{model_type}"), model_name
+                        )()
 
                     if model_utils["run_feature_selection"]:
 
@@ -301,12 +316,7 @@ class ModelTraining:
                     cv_results_train = cv_results[f"train_{eval_score}"]
                     current_model_score = cv_results_test.mean()
 
-                    logger.info(
-                        f"\n\n- Score being used to calculate the best validation score is '{eval_score}' and reached a mean score for the CV of {current_model_score:.3f}. \n\n- Validation score for {model_name} with hyperparameters tuning:\n"
-                        f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}.\n\n- Training score for {model_name} with hyperparameters tuning:\n"
-                        f"{cv_results_train.mean():.3f} ± {cv_results_train.std():.3f}."
-                    )
-                    plotting_metrics[model_name] = {
+                    training_plotting_metrics[model_name] = {
                         f"test_{eval_score}": current_model_score,
                         "std": cv_results_test.std(),
                     }
@@ -328,19 +338,63 @@ class ModelTraining:
                         use_from_cross_val=False,
                     )
 
-                    # TODO: check notebook sklearn to add std from cv results to add to the plot with the balance accuracy results from all models.absolutely. Create a dictionary that saves the results of all the models (Cv_results) so I can then save the balance_accuracy of each model with a std.
-                    if current_model_score > best_score:
-                        best_score = current_model_score
+                    # Use the optimized model to predict on the actual test set (unseen data)
+                    test_results, pred_metrics_dict, y_pred_decoded = self.predict_clf(
+                        randomized_search,
+                        model_settings,
+                        X_test_cp,
+                        y_test,
+                        modelling_problem_type,
+                        label_encoder,
+                    )
+
+                    # Save metrics and predictions for ROC curve on unseen data
+                    test_plotting_metrics[model_name] = {
+                        f"test_{eval_score}": pred_metrics_dict[modelling_problem_type][
+                            model_name
+                        ][eval_score],
+                        "preds": y_pred_decoded,
+                    }
+
+                    test_model_score = pred_metrics_dict[modelling_problem_type][
+                        model_name
+                    ][eval_score]
+
+                    logger.info(
+                        f"\n\n- Score being used to attain the best model is '{eval_score}'.\n\n- The scores for the optimized version with RandomGridSearchCV of the '{model_name}' model are:\n\n- Validation score:\n"
+                        f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}.\n\n- Training score:\n"
+                        f"{cv_results_train.mean():.3f} ± {cv_results_train.std():.3f}. \n\n- Test score:\n{test_model_score:.3f}"
+                    )
+
+                    # Check if test score is better than the previous best score. If so, save the current parameters and results as well as the best classifier (best classifier = the classifier that performed best on the unseen test data)
+                    if test_model_score > best_score:
+                        best_score = test_model_score
                         best_baseline_model = randomized_search
                         param_distribution = model_utils["hyperparameters"][
                             "param_distribution"
                         ]
                         best_baseline_model_cv_results = cv_results
+                        best_model_test_results = pred_metrics_dict
                         best_model_X_test = X_test_cp
 
-                    # TODO: add the saving results here as well for the training set.
+        logger.info(
+            f"Best model is: {best_baseline_model.best_estimator_.__class__.__name__} and it has the following optimized parameters:\n\n {best_baseline_model.best_params_}\n\n... with a test '{eval_score}' of {best_score:.3f}"
+        )
+
+        # Plot the training metrics
         self.plot_CV_results(
-            eval_score, plotting_metrics, self.saving_path, prefix="Evaluation"
+            eval_score,
+            training_plotting_metrics,
+            self.saving_path,
+            prefix="Training/Validation",
+        )
+        self.plot_clfs(
+            eval_score,
+            training_plotting_metrics,
+            test_plotting_metrics,
+            y_test,
+            self.saving_path,
+            dummy_score,
         )
 
         return (
@@ -359,6 +413,7 @@ class ModelTraining:
         y_test,
         modelling_problem_type,
         label_encoder,
+        prefix="Test",
     ):
 
         # Get information for the best optimized model
@@ -391,7 +446,7 @@ class ModelTraining:
 
         # Create metrics structure for the best model
         models_metrics = {
-            modelling_problem_type: {best_model: metrics_results}
+            modelling_problem_type: {best_model_name: metrics_results}
         }  # create a dictionary with current modelling_problem_type and inside this key, create a new dictionary as the value with the current model being passed and the metric results
 
         results = pd.json_normalize(models_metrics)
@@ -404,21 +459,30 @@ class ModelTraining:
         date = datetime.now().strftime("%Y_%m_%d_%I_%M_%S_%p")
 
         results.to_excel(
-            r"{}/Files/{}_{}_{}.xlsx".format(
-                self.saving_path, modelling_problem_type, best_model_name, date
+            r"{}/Files/{}_{}_{}_{}.xlsx".format(
+                self.saving_path, prefix, modelling_problem_type, best_model_name, date
             )
         )
         self.plot_conf_matrix(
-            best_model, X_test, y_test, model_name=best_model_name, prefix="Test"
+            best_model, X_test, y_test, model_name=best_model_name, prefix=prefix
         )
 
-        return results
+        return results, models_metrics, y_pred_decoded
 
-    # TODO: add validation curve to check for overfitting
-    # TODO: save best model as JSON
+    def save_best_model(self, best_model):
 
-    def ensemble_pipeline(self): ...
+        if hasattr(clf, "best_estimator_"):
+            model = best_model.best_estimator_
+        else:
+            model = best_model
 
+        best_model_name = model.__class__.__name__
+        dump(
+            model,
+            f"{self.saving_path}/Model/Best Optimized Model/{best_model_name}.joblib",
+        )
+
+    def shapley_values(self): ...
     def plot_conf_matrix(self, clf, X, y, model_name, prefix):
         from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
@@ -504,14 +568,20 @@ class ModelTraining:
 
     def feature_engineering(self): ...
 
-    def plot_CV_results(self, eval_score, plotting_metrics, saving_path, prefix):
+    def plot_CV_results(
+        self, eval_score, training_plotting_metrics, saving_path, prefix
+    ):
 
         import pandas as pd
 
         # Extracting data from the dictionary
-        names = list(plotting_metrics.keys())
-        results = [result[f"test_{eval_score}"] for result in plotting_metrics.values()]
-        std = [result["std"] for result in plotting_metrics.values()]
+        names = list(training_plotting_metrics.keys())
+        # Get the training/validation results from training_plotting_metrics
+        results = [
+            result[f"test_{eval_score}"]
+            for result in training_plotting_metrics.values()
+        ]
+        std = [result["std"] for result in training_plotting_metrics.values()]
 
         # Create a DataFrame
         df_new = pd.DataFrame(
@@ -524,12 +594,15 @@ class ModelTraining:
         df_sorted.index = df_sorted.Model
         df_sorted = df_sorted.round(3)
 
+        df_sorted.rename(
+            columns={f"test_{eval_score}": f"training_{eval_score}"}, inplace=True
+        )
         # Plotting
-        plt.figure(figsize=(12, 7))
+        plt.figure(figsize=(15, 10))
         ax = df_sorted.plot(
             kind="barh",
             x="Model",
-            y=f"test_{eval_score}",
+            y=f"training_{eval_score}",
             xerr="Std",
             facecolor="#AA0000",
             figsize=(15, 10),
@@ -546,12 +619,85 @@ class ModelTraining:
             )  # Place the text at x=v+gap and y= idx
 
         ax.spines["bottom"].set_color("#CCCCCC")
-        ax.set_xlabel(f"test_{eval_score}", fontsize=12)
+        ax.set_xlabel(f"Evaluation score used: {eval_score}", fontsize=12)
         ax.set_ylabel("Model", fontsize=12)
         plt.title(f"Model Comparison for Classification in {prefix}")
 
-        plt.show()
+        # plt.show()
         with plt.rc_context():  # Use this to set figure params like size and dpi
             plt.savefig(
                 f"{saving_path}\\Plots\\RankedModelsByMetric.png", bbox_inches="tight"
             )
+        # plt.close()
+
+    def plot_clfs(
+        self,
+        eval_score,
+        training_plotting_metrics,
+        test_training_plotting_metrics,
+        y_test,
+        saving_path,
+        dummy_score,
+    ):
+
+        fig, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, figsize=(15, 6))
+
+        # bar chart of accuracy scores
+        labels = list(training_plotting_metrics.keys())
+        inds = range(1, len(labels) + 1)
+
+        # Cross validation scores
+        scores_all = [
+            dictionary_scores[f"test_{eval_score}"]
+            for acc, dictionary_scores in training_plotting_metrics.items()
+        ]
+
+        # Test (unseen) scores
+        scores_predictive = [
+            dictionary_scores[f"test_{eval_score}"]
+            for acc, dictionary_scores in test_training_plotting_metrics.items()
+        ]
+
+        ax1.bar(
+            inds,
+            scores_all,
+            color=sns.color_palette(color)[5],
+            alpha=0.3,
+            hatch="x",
+            edgecolor="none",
+            label="CrossValidation Set",
+        )
+        ax1.bar(
+            inds,
+            scores_predictive,
+            color=sns.color_palette(color)[0],
+            label="Testing set",
+        )
+        ax1.set_ylim(0.4, 1)
+        ax1.set_ylabel(f"{eval_score} score")
+        ax1.axhline(dummy_score, color="black", linestyle="--")
+        ax1.set_title(f"{eval_score} scores for basic models", fontsize=17)
+        ax1.set_xticks(range(1, len(labels) + 1))
+        ax1.set_xticklabels(labels, size=12, rotation=40, ha="right")
+        ax1.legend()
+
+        preds_all = [
+            dictionary_scores["preds"]
+            for acc, dictionary_scores in test_training_plotting_metrics.items()
+        ]
+        for label, pred in zip(labels, preds_all):
+            fpr, tpr, threshold = roc_curve(y_test, pred)
+            roc_auc = auc(fpr, tpr)
+            ax2.plot(fpr, tpr, label=label + " (area = %0.2f)" % roc_auc, linewidth=2)
+        ax2.plot([0, 1], [0, 1], "k--", linewidth=2)
+        ax2.set_xlim([-0.05, 1.0])
+        ax2.set_ylim([-0.05, 1.05])
+        ax2.set_xlabel("False Positive Rate")
+        ax2.set_ylabel("True Positive Rate")
+        ax2.legend(loc="lower right", prop={"size": 12})
+        ax2.set_title("Roc curve for for basic models", fontsize=17)
+
+        # plt.show()
+        with plt.rc_context():  # Use this to set figure params like size and dpi
+            plt.savefig(f"{saving_path}\\Plots\\AUC.png", bbox_inches="tight")
+        # plt.close()
