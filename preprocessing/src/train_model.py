@@ -321,14 +321,7 @@ class ModelTraining:
                         "std": cv_results_test.std(),
                     }
 
-                    # Plot CM
-                    self.plot_conf_matrix(
-                        randomized_search,
-                        X_train_cp,
-                        y_train_cp,
-                        model_name=model_name,
-                        prefix="Training",
-                    )
+                    # NOTE: it doesn't make sense to add the Confusion Matrix for the traning data since the model has already been trained and seen the training data. If we fit the model again on the training data, it will provide much better results in the confusion matrix than the results that were seen in the training and validation scores. Confusion Matrix is only used on the test data
                     self.plot_training_curves(
                         randomized_search,
                         eval_score=eval_score,
@@ -471,7 +464,8 @@ class ModelTraining:
 
     def save_best_model(self, best_model):
 
-        if hasattr(clf, "best_estimator_"):
+        logger.info(f"Saving the best model:\n\n{best_model}")
+        if hasattr(best_model, "best_estimator_"):
             model = best_model.best_estimator_
         else:
             model = best_model
@@ -613,7 +607,9 @@ class ModelTraining:
         gap = 0.015  # Space between the text and the end of the bar
         # You have to call ax.text() for each bar
         # They are already sorted and you need the index of the bar
-        for i, (v, s) in enumerate(zip(df_sorted[f"test_{eval_score}"], df_sorted.Std)):
+        for i, (v, s) in enumerate(
+            zip(df_sorted[f"training_{eval_score}"], df_sorted.Std)
+        ):
             ax.text(
                 v + s + gap, i, f"{v} ± {s}", color="blue"
             )  # Place the text at x=v+gap and y= idx

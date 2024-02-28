@@ -101,7 +101,7 @@ class Orchestrator(object):
         model_settings = config[modelling_problem_type]
 
         # Load full dataset
-
+        # TODO: add NA_solver here
         data.fillna(0, inplace=True)
 
         # Drop all rows that contain NA
@@ -131,7 +131,7 @@ class Orchestrator(object):
         X_train, X_test, y_train, y_test = ModelTrainingPipeline.tabular_data_split(
             X, y, modelling_problem_type
         )
-        # Get best baseline model and optimize it
+        # Loop through each model, optimize them, find the model that generalizes best and get the predictions from this best model.
         if modelling_problem_type == "classification":
             best_clf, cv_results_dict, param_distribution, label_encoder, X_test_new = (
                 ModelTrainingPipeline.train_and_optimize_clf(
@@ -144,14 +144,13 @@ class Orchestrator(object):
                     label_encoder,
                 )
             )
+            # Save the best model
             ModelTrainingPipeline.save_best_model(best_clf)
 
         elif modelling_problem_type == "regression":
             baseline_model = ModelTrainingPipeline.find_best_reg(
                 model_settings, X_train, X_test, y_train, y_test, modelling_problem_type
             )
-
-        # Save best optimized model
 
 
 def main(CONFIG_PATH: str):
