@@ -23,7 +23,9 @@ def _return_cross_validation(local_config: dict):
     cv_class_name = str(list(local_config["cv"].keys())[0])
     cv_params = local_config["cv"][cv_class_name]
 
-    logger.info(f"Loading cross-validation strategy: {cv_class_name}. ")
+    logger.info(
+        f"\n\nLoading cross-validation strategy '{cv_class_name}' with the following parameters:\n{cv_params}. "
+    )
     cv = getattr(
         importlib.import_module(f"sklearn.model_selection"),
         str(list(local_config["cv"].keys())[0]),

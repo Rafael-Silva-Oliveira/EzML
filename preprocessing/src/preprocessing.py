@@ -16,14 +16,22 @@ from sklearn.compose import ColumnTransformer
 from loguru import logger
 import pandas as pd
 import warnings
+from sklearn.linear_model import LinearRegression
+from typing import List
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.ensemble import HistGradientBoostingClassifier
 
 warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 
 class PreProcessor:
 
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, encoder_dict: dict):
         self.config = config
+        self.encoder_dict = encoder_dict
 
     def encoders(self, data: pd.DataFrame, dtype: str):
 
@@ -116,6 +124,7 @@ class PreProcessor:
                     remainder="drop",
                     verbose_feature_names_out=True,
                 )
+
                 # Create a new dataframe with just the new transformed columns
                 new_data = pd.DataFrame(
                     preprocessor.fit_transform(data_cp),
@@ -139,6 +148,69 @@ class PreProcessor:
                         ],
                         axis=1,
                     )
-        return data_cp
 
-    def NA_solver(self): ...
+            if dtype == "categorical":
+                self.encoder_dict["categorical_encoder"][
+                    preprocessor_name
+                ] = preprocessor
+            elif dtype == "numerical":
+                self.encoder_dict["numerical_encoder"][preprocessor_name] = preprocessor
+
+        return data_cp, self.encoder_dict
+
+    def NA_solver(self, data: pd.DataFrame):
+
+        logger.info(f"Running NaN solver")
+        from sklearn.ensemble import HistGradientBoostingRegressor
+        import re
+
+        # Create a copy of the original dataframe for regression
+        data_copy = data.copy()
+
+        # Convert object/string predictors in X to OrdinalEncoded integers
+        for column in data.columns:
+            if column != "mutation_count" and "_mut" in column:
+                data[column] = data_copy[column].apply(
+                    lambda x: 1 if isinstance(x, str) else x
+                )
+                data[column] = data[column].astype(object)
+            else:
+                encoder = OrdinalEncoder()
+                data[column] = encoder.fit_transform(
+                    data_copy[column].values.reshape(-1, 1)
+                )
+        for column in data.columns:
+            if data[column].dtype == "object":
+                # Fill NAs with majority voting
+                majority_vote = data[column].mode().iloc[0]
+                data[column].fillna(majority_vote, inplace=True)
+            elif data[column].dtype == "float" or data[column].dtype == "int":
+                # Fill NAs with regression imputation
+                missing_indices = data[column].isnull()
+                non_missing_indices = ~missing_indices
+
+                if missing_indices.sum() > 0:
+                    # Create a regression model
+                    model = HistGradientBoostingRegressor()
+
+                    # Prepare the input data for regression
+                    X = data[non_missing_indices].drop(column, axis=1)
+                    y = data[column][non_missing_indices]
+
+                    # Fit the model using non-missing values
+                    model.fit(X, y)
+
+                    # Predict the missing values
+                    X_missing = data[missing_indices].drop(column, axis=1)
+                    predicted_values = model.predict(X_missing)
+
+                    # Adjust the result if the column is count data
+                    if not data[column].apply(float.is_integer).all():
+                        predicted_values = np.round(predicted_values)
+
+                    # Fill the missing values with the predicted values
+                    data[column][missing_indices] = predicted_values
+            else:
+                # Skip invalid column type
+                continue
+        return data

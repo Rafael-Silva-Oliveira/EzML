@@ -57,27 +57,35 @@ date = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
 
 class Orchestrator(object):
 
-    def __init__(self, config, path_backbone, data_dict, saving_path):
+    def __init__(self, config, path_backbone, data_dict, saving_path, encoder_dict):
         self.config = config
         self.path_backbone = path_backbone
         self.data_dict = data_dict
         self.saving_path = saving_path
+        self.encoder_dict = encoder_dict
 
     def run_PreProcessor(self) -> dict:
         logger.warning(
             "Note: It is important that numerical columns are pre-processed first, before categorical ones. This is to avoid OneHotEncoded columns (binary 0 and 1) to be seen as numerical during numerical pre-processing."
         )
         config = self.config["preprocessing"]
-        PreProcessorPipeline = PreProcessor(config=config)
+        PreProcessorPipeline = PreProcessor(
+            config=config, encoder_dict=self.encoder_dict
+        )
 
         data = self.data_dict["raw_data"].copy()
 
+        data = PreProcessorPipeline.NA_solver(data=data)
+
         # Start by pre-processing selected numerical columns
-        data = PreProcessorPipeline.encoders(data=data, dtype="numerical")
+        data, encoder_dict = PreProcessorPipeline.encoders(data=data, dtype="numerical")
 
         # Finally, process categorical columns
-        data = PreProcessorPipeline.encoders(data=data, dtype="categorical")
+        data, encoder_dict = PreProcessorPipeline.encoders(
+            data=data, dtype="categorical"
+        )
 
+        self.encoder_dict = encoder_dict
         self.data_dict.setdefault("preprocessed_data", data)
 
     def run_ModelTraining(self) -> dict:
@@ -99,15 +107,6 @@ class Orchestrator(object):
         #     modelling_problem_type = "regression"
 
         model_settings = config[modelling_problem_type]
-
-        # Load full dataset
-        # TODO: add NA_solver here
-        data.fillna(0, inplace=True)
-
-        # Drop all rows that contain NA
-        # logger.info(f"Data shape before dropping NAs {data.shape}")
-        # data.dropna(inplace=True)
-        # logger.info(f"Data shape after dropping NAs {data.shape}")
 
         if "all" in features:
             features = data.columns.tolist()
@@ -131,6 +130,9 @@ class Orchestrator(object):
         X_train, X_test, y_train, y_test = ModelTrainingPipeline.tabular_data_split(
             X, y, modelling_problem_type
         )
+        self.data_dict["original_X_test"] = X_test.copy()
+        self.data_dict["original_X_train"] = X_train.copy()
+
         # Loop through each model, optimize them, find the model that generalizes best and get the predictions from this best model.
         if modelling_problem_type == "classification":
             best_clf, cv_results_dict, param_distribution, label_encoder, X_test_new = (
@@ -146,6 +148,11 @@ class Orchestrator(object):
             )
             # Save the best model
             ModelTrainingPipeline.save_best_model(best_clf)
+
+            # Shap values and feature importance analysis
+            ModelTrainingPipeline.shap_analysis(
+                best_clf, X_test_new, self.data_dict["original_X_test"], y_test
+            )
 
         elif modelling_problem_type == "regression":
             baseline_model = ModelTrainingPipeline.find_best_reg(
@@ -190,11 +197,13 @@ def main(CONFIG_PATH: str):
     logger.info(f"Directory where outputs will be saved: {directory}")
 
     data_dict = {"raw_data": data}
+    encoder_dict = {"numerical_encoder": {}, "categorical_encoder": {}}
     ORCHESTRATOR = Orchestrator(
         config=config,
         path_backbone=path_backbone,
         data_dict=data_dict,
         saving_path=directory,
+        encoder_dict=encoder_dict,
     )
     ORCHESTRATOR.run_PreProcessor()
     ORCHESTRATOR.run_ModelTraining()

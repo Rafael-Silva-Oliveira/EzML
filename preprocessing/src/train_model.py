@@ -26,6 +26,9 @@ from sklearn.linear_model import (
 )
 from sklearn.neighbors import KNeighborsClassifier
 import xgboost
+import catboost
+import lightgbm
+import optuna
 
 # from xgboost import XGBClassifier
 from sklearn.neural_network import MLPClassifier
@@ -45,6 +48,10 @@ from sklearn.ensemble import (
     HistGradientBoostingRegressor,
     AdaBoostClassifier,
 )
+
+from catboost import CatBoostClassifier
+from lightgbm import LGBMClassifier
+
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.feature_selection import (
     SequentialFeatureSelector,
@@ -196,6 +203,29 @@ class ModelTraining:
         y_train = y_train.T.to_numpy()[0]
         y_test = y_test.T.to_numpy()[0]
 
+        # Gather CV settings
+        cv_settings = model_settings["cv_settings"]
+        eval_score = cv_settings["scoring"][0]
+
+        # Load cross validation strategy dynamically
+        cv = _return_cross_validation(cv_settings)
+
+        # Get optimization type
+        optimization = model_settings["optimization"]
+
+        optimization_type_list = [
+            key
+            for key, value in model_settings["optimization"].items()
+            if value["usage"]
+        ]
+
+        if len(optimization_type_list) > 1:
+            raise ValueError(
+                f"Only one optimization type can be used. You currently have {len(optimization_type_list)} types selected. Please, adjust the settings."
+            )
+
+        optimization_type = optimization_type_list[0]
+
         for model_type, model_config in models.items():
             for model_name, model_utils in model_config.items():
                 if model_utils["usage"] == 1:
@@ -207,6 +237,10 @@ class ModelTraining:
 
                     if "XGB" in model_name:
                         model = eval(f"xgboost.{model_name}()")
+                    elif "CatBoost" in model_name:
+                        model = eval(f"catboost.{model_name}()")
+                    elif "LGBMClassifier" in model_name:
+                        model = eval(f"lightgbm.{model_name}()")
                     else:
                         model = getattr(
                             importlib.import_module(f"sklearn.{model_type}"), model_name
@@ -244,12 +278,6 @@ class ModelTraining:
 
                     pipeline = make_pipeline(model)
 
-                    hyperparameter_settings = model_utils["hyperparameters"][
-                        "hyperparameter_settings"
-                    ]
-
-                    logger.info(f"Running CV for {model_name}.")
-
                     # Transform strings in the param_distribution to actual ranges
                     param_distribution_final = {
                         key: (
@@ -264,45 +292,64 @@ class ModelTraining:
 
                     # Optimizing the best baseline model on training data
                     logger.info(
-                        f"Optimizing baseline model using RandomizedSearchCV. \n Baseline model is {model_name} and it will be optimized with the following parameters: \n{param_distribution_final}"
+                        f"Optimizing baseline model using '{optimization_type}'. \n Baseline model is {model_name} and it will be optimized with the following parameters: \n{param_distribution_final}"
                     )
 
-                    # Load cross validation strategy dynamically
-                    cv = _return_cross_validation(hyperparameter_settings)
+                    if optimization_type == "optuna":
+                        study = self.optimize_clf(
+                            param_distribution_final,
+                            model,
+                            X_train_cp,
+                            y_train_cp,
+                            cv,
+                            cv_settings,
+                        )
 
-                    # Optimize hyperparameters
-                    randomized_search = RandomizedSearchCV(
-                        model,  # Choose just the model and not the imputer
-                        param_distributions=param_distribution_final,
-                        n_iter=hyperparameter_settings["n_iter"],
-                        scoring=hyperparameter_settings["scoring"],
-                        cv=cv,
-                        random_state=0,
-                        n_jobs=hyperparameter_settings["n_jobs"],
-                        verbose=3,
-                        refit=hyperparameter_settings["scoring"][0],
-                        return_train_score=True,
-                    ).fit(X_train_cp, y_train_cp)
+                        best_trial = study.best_trial
+                        best_params = best_trial.params
+                        best_cv_sore = best_trial.value
+
+                        print(f"Best hyperparameters for {model_name}: {best_params}")
+                        print(f"Best score: {best_cv_sore}")
+
+                        optimized_clf = model.set_params(**best_params)
+
+                        optimized_clf.fit(X_train_cp, y_train_cp)
+
+                    elif optimization_type == "RandomizedSearchCV":
+                        # Optimize hyperparameters
+                        optimized_clf = RandomizedSearchCV(
+                            model,  # Choose just the model and not the imputer
+                            param_distributions=param_distribution_final,
+                            n_iter=cv_settings["n_iter"],
+                            scoring=cv_settings["scoring"],
+                            cv=cv,
+                            random_state=0,
+                            n_jobs=cv_settings["n_jobs"],
+                            verbose=3,
+                            refit=cv_settings["scoring"][0],
+                            return_train_score=True,
+                        ).fit(X_train_cp, y_train_cp)
 
                     # Apply cross validation to get the best model
-                    if hasattr(randomized_search, "best_estimator_"):
+                    if hasattr(optimized_clf, "best_estimator_"):
                         cv_results = cross_validate(
-                            randomized_search.best_estimator_,
+                            optimized_clf.best_estimator_,
                             X_train_cp,
                             y_train_cp,
                             cv=cv,
-                            scoring=hyperparameter_settings["scoring"],
+                            scoring=cv_settings["scoring"],
                             return_estimator=True,
                             return_train_score=True,
                             error_score="raise",
                         )
                     else:
                         cv_results = cross_validate(
-                            randomized_search,
+                            optimized_clf,
                             X_train_cp,
                             y_train_cp,
                             cv=cv,
-                            scoring=hyperparameter_settings["scoring"],
+                            scoring=cv_settings["scoring"],
                             return_estimator=True,
                             return_train_score=True,
                             error_score="raise",
@@ -311,7 +358,6 @@ class ModelTraining:
                     cv_results_dict[model_name] = cv_results
                     # This "test_scoring_type" is actually the validation set. The actual test set will only be used to calculate the final classification report to avoid data leakage.Do note that if more scorings are added to the list, only the first one will be used to evaluate the best model score
 
-                    eval_score = hyperparameter_settings["scoring"][0]
                     cv_results_test = cv_results[f"test_{eval_score}"]
                     cv_results_train = cv_results[f"train_{eval_score}"]
                     current_model_score = cv_results_test.mean()
@@ -323,7 +369,7 @@ class ModelTraining:
 
                     # NOTE: it doesn't make sense to add the Confusion Matrix for the traning data since the model has already been trained and seen the training data. If we fit the model again on the training data, it will provide much better results in the confusion matrix than the results that were seen in the training and validation scores. Confusion Matrix is only used on the test data
                     self.plot_training_curves(
-                        randomized_search,
+                        optimized_clf,
                         eval_score=eval_score,
                         test_label_name="val",
                         model_name=model_name,
@@ -333,7 +379,7 @@ class ModelTraining:
 
                     # Use the optimized model to predict on the actual test set (unseen data)
                     test_results, pred_metrics_dict, y_pred_decoded = self.predict_clf(
-                        randomized_search,
+                        optimized_clf,
                         model_settings,
                         X_test_cp,
                         y_test,
@@ -354,7 +400,7 @@ class ModelTraining:
                     ][eval_score]
 
                     logger.info(
-                        f"\n\n- Score being used to attain the best model is '{eval_score}'.\n\n- The scores for the optimized version with RandomGridSearchCV of the '{model_name}' model are:\n\n- Validation score:\n"
+                        f"\n\n- Score being used to attain the best model is '{eval_score}'.\n\n- The scores for the optimized version with '{optimization_type}' of the '{model_name}' model are:\n\n- Validation score:\n"
                         f"{cv_results_test.mean():.3f} ± {cv_results_test.std():.3f}.\n\n- Training score:\n"
                         f"{cv_results_train.mean():.3f} ± {cv_results_train.std():.3f}. \n\n- Test score:\n{test_model_score:.3f}"
                     )
@@ -362,7 +408,7 @@ class ModelTraining:
                     # Check if test score is better than the previous best score. If so, save the current parameters and results as well as the best classifier (best classifier = the classifier that performed best on the unseen test data)
                     if test_model_score > best_score:
                         best_score = test_model_score
-                        best_baseline_model = randomized_search
+                        best_baseline_model = optimized_clf
                         param_distribution = model_utils["hyperparameters"][
                             "param_distribution"
                         ]
@@ -370,9 +416,14 @@ class ModelTraining:
                         best_model_test_results = pred_metrics_dict
                         best_model_X_test = X_test_cp
 
-        logger.info(
-            f"Best model is: {best_baseline_model.best_estimator_.__class__.__name__} and it has the following optimized parameters:\n\n {best_baseline_model.best_params_}\n\n... with a test '{eval_score}' of {best_score:.3f}"
-        )
+        if hasattr(best_baseline_model, "best_estimator_"):
+            logger.info(
+                f"Best model is: {best_baseline_model.best_estimator_.__class__.__name__} and it has the following optimized parameters:\n\n {best_baseline_model.best_params_}\n\n... with a test '{eval_score}' of {best_score:.3f}"
+            )
+        else:
+            logger.info(
+                f"Best model is: {best_baseline_model.__class__.__name__} and it has the following optimized parameters:\n\n {best_baseline_model.get_params}\n\n... with a test '{eval_score}' of {best_score:.3f}"
+            )
 
         # Plot the training metrics
         self.plot_CV_results(
@@ -398,6 +449,63 @@ class ModelTraining:
             best_model_X_test,
         )
 
+    # Define the objective function
+
+    def optimize_clf(
+        self,
+        param_distribution,
+        model,
+        X_train_cp,
+        y_train_cp,
+        cv,
+        cv_settings,
+    ):
+        from sklearn.model_selection import cross_val_score
+
+        def objective(
+            trial,
+            param_distribution,
+            model,
+            X_train_cp,
+            y_train_cp,
+            cv,
+            cv_settings,
+        ):
+            from sklearn.metrics import accuracy_score
+
+            params = {
+                k: trial.suggest_categorical(k, v)
+                for k, v in param_distribution.items()
+            }
+            model.set_params(**params)
+            return cross_val_score(
+                model,
+                X_train_cp,
+                y_train_cp,
+                cv=cv,
+                scoring=cv_settings["scoring"][0],
+            ).mean()
+
+            return cross_val_score
+
+        # Create a study object and optimize it
+        study = optuna.create_study(direction="maximize")
+
+        study.optimize(
+            lambda trial: objective(
+                trial=trial,
+                param_distribution=param_distribution,
+                model=model,
+                X_train_cp=X_train_cp,
+                y_train_cp=y_train_cp,
+                cv=cv,
+                cv_settings=cv_settings,
+            ),
+            n_trials=25,
+        )
+
+        return study
+
     def predict_clf(
         self,
         best_baseline_model,
@@ -410,7 +518,10 @@ class ModelTraining:
     ):
 
         # Get information for the best optimized model
-        best_model = best_baseline_model.best_estimator_
+        if hasattr(best_baseline_model, "best_estimator_"):
+            best_model = best_baseline_model.best_estimator_
+        else:
+            best_model = best_baseline_model
         best_model_name = best_model.__class__.__name__
 
         # Get test score (no need for this as its already in the classifiction report down below)
@@ -476,7 +587,6 @@ class ModelTraining:
             f"{self.saving_path}/Model/Best Optimized Model/{best_model_name}.joblib",
         )
 
-    def shapley_values(self): ...
     def plot_conf_matrix(self, clf, X, y, model_name, prefix):
         from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
@@ -503,9 +613,12 @@ class ModelTraining:
         cv_results,
         use_from_cross_val=False,
     ):
-
-        val_scores = clf.cv_results_[f"mean_test_{eval_score}"]
-        train_scores = clf.cv_results_[f"mean_train_{eval_score}"]
+        if hasattr(clf, "cv_results_"):
+            val_scores = clf.cv_results_[f"mean_test_{eval_score}"]
+            train_scores = clf.cv_results_[f"mean_train_{eval_score}"]
+        else:
+            val_scores = cv_results[f"test_{eval_score}"]
+            train_scores = cv_results[f"train_{eval_score}"]
 
         plt.plot(val_scores, label=test_label_name)
         plt.plot(train_scores, label="train")
@@ -553,10 +666,12 @@ class ModelTraining:
                 importance_getter=local_config["importance_getter"],
             )
 
-            selector_fitted = selector.fit(X_train, y_train)
-            selected_features = [
-                col for col in selector_fitted.get_feature_names_out(X_train.columns)
-            ]
+        selector_fitted = selector.fit(X_train, y_train)
+        selected_features = (
+            selector_fitted.get_feature_names_out(data.columns)
+            if selector_type == "SequentialFeatureSelector"
+            else selector_fitted.get_feature_names_out(X_train.columns)
+        )
 
         return selector_fitted, selected_features
 
@@ -697,3 +812,87 @@ class ModelTraining:
         with plt.rc_context():  # Use this to set figure params like size and dpi
             plt.savefig(f"{saving_path}\\Plots\\AUC.png", bbox_inches="tight")
         # plt.close()
+
+    def shap_analysis(self, model, X_test, X_test_original, y_test):
+        import shap
+
+        shap.initjs()
+
+        # Check the type of the model and return the appropriate explainer
+        X_test_original_cp = X_test_original.copy()
+
+        for col_type, preprocessor_dict in self.encoder_dict.items():
+            if col_type == "categorical_encoder":
+                for col, encoder in preprocessor_dict.items():
+                    X_test_original_cp = encoder.inverse_transform(X_test_original_cp)
+            if col_type == "numerical_encoder":
+                for col, encoder in preprocessor_dict.items():
+                    X_test_original_cp = encoder.inverse_transform(X_test_original_cp)
+        if isinstance(
+            model, (LogisticRegression, Perceptron, SGDClassifier, RidgeClassifierCV)
+        ):
+            explainer = shap.LinearExplainer(model, X_test_original_cp)
+        elif isinstance(
+            model,
+            (
+                RandomForestClassifier,
+                DecisionTreeClassifier,
+                HistGradientBoostingClassifier,
+                AdaBoostClassifier,
+                XGBClassifier,
+                CatBoostClassifier,
+                LGBMClassifier,
+            ),
+        ):
+            explainer = shap.TreeExplainer(model)
+        elif isinstance(
+            model, (KNeighborsClassifier, SVC, ComplementNB, MLPClassifier)
+        ):
+            explainer = shap.KernelExplainer(model.predict_proba, X_test_original_cp)
+        else:
+            raise ValueError(f"Unsupported model: {type(model)}")
+
+        explainer_shap = explainer(X_test_original_cp)
+        shap_values = explainer.shap_values(X_test_original_cp)
+        shap.plots.bar(explainer_shap)
+        with plt.rc_context():  # Use this to set figure params like size and dpi
+            plt.savefig(
+                f"{self.saving_path}\\Plots\\SHAP_Bar_Plot.png", bbox_inches="tight"
+            )
+        plt.close()
+
+        shap.summary_plot(explainer_shap, X_test_original_cp)
+        with plt.rc_context():  # Use this to set figure params like size and dpi
+            plt.savefig(
+                f"{self.saving_path}\\Plots\\SHAP_Summary_Plot.png", bbox_inches="tight"
+            )
+            plt.close()
+
+        # Create a SHAP decision plot for the first instance
+        shap.decision_plot(
+            explainer.expected_value, shap_values[0, :], X_test_original_cp.iloc[0, :]
+        )
+        with plt.rc_context():
+            # Save the plots to the reports folder
+            plt.savefig(
+                f"{self.saving_path}\\Plots\\SHAP_Decision_Plot.png",
+                bbox_inches="tight",
+            )
+            plt.close()
+
+        # add a force plot
+        shap.force_plot(
+            explainer.expected_value,
+            shap_values[0, :],
+            X_test_original_cp.iloc[0, :],
+            matplotlib=True,
+        )
+        # save the force plot with rc
+        with plt.rc_context():
+            plt.savefig(
+                f"{self.saving_path}\\Plots\\SHAP_Force_Plot.png",
+                bbox_inches="tight",
+            )
+            plt.close()
+
+        return shap_values, explainer

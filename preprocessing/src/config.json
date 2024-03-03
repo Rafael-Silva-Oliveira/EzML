@@ -1,6 +1,6 @@
 {
   "path_backbone": "C://Users//rafaelo//OneDrive - NTNU//Documents//Projects//preprocessing//preprocessing//preprocessing",
-  "data": "data//raw//METABRIC_RNA_Mutation.csv",
+  "data": "data//raw//full_METABRIC_RNA_Mutation.csv",
   "preprocessing": {
     "numerical_preprocessing": {
       "StandardScaler": {
@@ -535,7 +535,180 @@
         "transformed__tulp4",
         "transformed__ugt2b15",
         "transformed__ugt2b17",
-        "transformed__ugt2b7"
+        "transformed__ugt2b7",
+        "transformed__pik3ca_mut",
+        "transformed__tp53_mut",
+        "transformed__muc16_mut",
+        "transformed__ahnak2_mut",
+        "transformed__kmt2c_mut",
+        "transformed__syne1_mut",
+        "transformed__gata3_mut",
+        "transformed__map3k1_mut",
+        "transformed__ahnak_mut",
+        "transformed__dnah11_mut",
+        "transformed__cdh1_mut",
+        "transformed__dnah2_mut",
+        "transformed__kmt2d_mut",
+        "transformed__ush2a_mut",
+        "transformed__ryr2_mut",
+        "transformed__dnah5_mut",
+        "transformed__herc2_mut",
+        "transformed__pde4dip_mut",
+        "transformed__akap9_mut",
+        "transformed__tg_mut",
+        "transformed__birc6_mut",
+        "transformed__utrn_mut",
+        "transformed__tbx3_mut",
+        "transformed__col6a3_mut",
+        "transformed__arid1a_mut",
+        "transformed__lama2_mut",
+        "transformed__notch1_mut",
+        "transformed__cbfb_mut",
+        "transformed__ncor2_mut",
+        "transformed__col12a1_mut",
+        "transformed__col22a1_mut",
+        "transformed__pten_mut",
+        "transformed__akt1_mut",
+        "transformed__atr_mut",
+        "transformed__thada_mut",
+        "transformed__ncor1_mut",
+        "transformed__stab2_mut",
+        "transformed__myh9_mut",
+        "transformed__runx1_mut",
+        "transformed__nf1_mut",
+        "transformed__map2k4_mut",
+        "transformed__ros1_mut",
+        "transformed__lamb3_mut",
+        "transformed__arid1b_mut",
+        "transformed__erbb2_mut",
+        "transformed__sf3b1_mut",
+        "transformed__shank2_mut",
+        "transformed__ep300_mut",
+        "transformed__ptprd_mut",
+        "transformed__usp9x_mut",
+        "transformed__setd2_mut",
+        "transformed__setd1a_mut",
+        "transformed__thsd7a_mut",
+        "transformed__afdn_mut",
+        "transformed__erbb3_mut",
+        "transformed__rb1_mut",
+        "transformed__myo1a_mut",
+        "transformed__alk_mut",
+        "transformed__fanca_mut",
+        "transformed__adgra2_mut",
+        "transformed__ubr5_mut",
+        "transformed__pik3r1_mut",
+        "transformed__myo3a_mut",
+        "transformed__asxl2_mut",
+        "transformed__apc_mut",
+        "transformed__ctcf_mut",
+        "transformed__asxl1_mut",
+        "transformed__fancd2_mut",
+        "transformed__taf1_mut",
+        "transformed__kdm6a_mut",
+        "transformed__ctnna3_mut",
+        "transformed__brca1_mut",
+        "transformed__ptprm_mut",
+        "transformed__foxo3_mut",
+        "transformed__usp28_mut",
+        "transformed__gldc_mut",
+        "transformed__brca2_mut",
+        "transformed__cacna2d3_mut",
+        "transformed__arid2_mut",
+        "transformed__aff2_mut",
+        "transformed__lifr_mut",
+        "transformed__sbno1_mut",
+        "transformed__kdm3a_mut",
+        "transformed__ncoa3_mut",
+        "transformed__bap1_mut",
+        "transformed__l1cam_mut",
+        "transformed__pbrm1_mut",
+        "transformed__chd1_mut",
+        "transformed__jak1_mut",
+        "transformed__setdb1_mut",
+        "transformed__fam20c_mut",
+        "transformed__arid5b_mut",
+        "transformed__egfr_mut",
+        "transformed__map3k10_mut",
+        "transformed__smarcc2_mut",
+        "transformed__erbb4_mut",
+        "transformed__npnt_mut",
+        "transformed__nek1_mut",
+        "transformed__agmo_mut",
+        "transformed__zfp36l1_mut",
+        "transformed__smad4_mut",
+        "transformed__sik1_mut",
+        "transformed__casp8_mut",
+        "transformed__prkcq_mut",
+        "transformed__smarcc1_mut",
+        "transformed__palld_mut",
+        "transformed__dcaf4l2_mut",
+        "transformed__bcas3_mut",
+        "transformed__cdkn1b_mut",
+        "transformed__gps2_mut",
+        "transformed__men1_mut",
+        "transformed__stk11_mut",
+        "transformed__sik2_mut",
+        "transformed__ptpn22_mut",
+        "transformed__brip1_mut",
+        "transformed__flt3_mut",
+        "transformed__nrg3_mut",
+        "transformed__fbxw7_mut",
+        "transformed__ttyh1_mut",
+        "transformed__taf4b_mut",
+        "transformed__or6a2_mut",
+        "transformed__map3k13_mut",
+        "transformed__hdac9_mut",
+        "transformed__prkacg_mut",
+        "transformed__rpgr_mut",
+        "transformed__large1_mut",
+        "transformed__foxp1_mut",
+        "transformed__clk3_mut",
+        "transformed__prkcz_mut",
+        "transformed__lipi_mut",
+        "transformed__ppp2r2a_mut",
+        "transformed__prkce_mut",
+        "transformed__gh1_mut",
+        "transformed__gpr32_mut",
+        "transformed__kras_mut",
+        "transformed__nf2_mut",
+        "transformed__chek2_mut",
+        "transformed__ldlrap1_mut",
+        "transformed__clrn2_mut",
+        "transformed__acvrl1_mut",
+        "transformed__agtr2_mut",
+        "transformed__cdkn2a_mut",
+        "transformed__ctnna1_mut",
+        "transformed__magea8_mut",
+        "transformed__prr16_mut",
+        "transformed__dtwd2_mut",
+        "transformed__akt2_mut",
+        "transformed__braf_mut",
+        "transformed__foxo1_mut",
+        "transformed__nt5e_mut",
+        "transformed__ccnd3_mut",
+        "transformed__nr3c1_mut",
+        "transformed__prkg1_mut",
+        "transformed__tbl1xr1_mut",
+        "transformed__frmd3_mut",
+        "transformed__smad2_mut",
+        "transformed__sgcd_mut",
+        "transformed__spaca1_mut",
+        "transformed__rasgef1b_mut",
+        "transformed__hist1h2bc_mut",
+        "transformed__nr2f1_mut",
+        "transformed__klrg1_mut",
+        "transformed__mbl2_mut",
+        "transformed__mtap_mut",
+        "transformed__ppp2cb_mut",
+        "transformed__smarcd1_mut",
+        "transformed__nras_mut",
+        "transformed__ndfip1_mut",
+        "transformed__hras_mut",
+        "transformed__prps2_mut",
+        "transformed__smarcb1_mut",
+        "transformed__stmn2_mut",
+        "transformed__siah1_mut"
       ]
     },
     "feature_selection": {
@@ -557,7 +730,7 @@
       "RFECV": {
         "usage": true,
         "params": {
-          "min_features_to_select": 40,
+          "min_features_to_select": 50,
           "scoring": "accuracy",
           "step": 0.1,
           "cv": {
@@ -573,7 +746,6 @@
         }
       }
     },
-    "feature_engineering": {},
     "classification": {
       "usage": 1,
       "train_test_split": {
@@ -585,24 +757,28 @@
       "DummyClassifier": {
         "strategy": "most_frequent"
       },
+      "cv_settings": {
+        "n_iter": 1,
+        "scoring": ["accuracy"],
+        "cv": {
+          "StratifiedKFold": {
+            "n_splits": 10,
+            "shuffle": true,
+            "random_state": 0
+          }
+        },
+        "n_jobs": 2
+      },
+      "optimization": {
+        "optuna": { "usage": true },
+        "RandomizedSearchCV": { "usage": false }
+      },
       "models": {
         "linear_model": {
           "LogisticRegression": {
             "usage": 1,
             "run_feature_selection": true,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "penalty": ["l1", "l2"],
                 "C": "np.logspace(-3, 2, 6)",
@@ -612,21 +788,9 @@
             }
           },
           "Perceptron": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": true,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "penalty": ["l2", "l1", "elasticnet"],
                 "alpha": [0.0001, 0.001, 0.01],
@@ -639,21 +803,9 @@
             }
           },
           "SGDClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": true,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "loss": [
                   "hinge",
@@ -677,21 +829,9 @@
             }
           },
           "RidgeClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": true,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "alpha": [0.1, 1.0, 10.0],
                 "solver": [
@@ -710,21 +850,9 @@
         },
         "neighbors": {
           "KNeighborsClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "n_neighbors": [3, 5, 7, 9],
                 "weights": ["uniform", "distance"],
@@ -737,21 +865,9 @@
         },
         "svm": {
           "SVC": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "C": [0.1, 1, 10],
                 "kernel": ["linear", "rbf", "poly"],
@@ -764,21 +880,9 @@
         },
         "naive_bayes": {
           "ComplementNB": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "alpha": [
                   1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 0.001, 0.01, 0.1, 0.5, 1
@@ -789,21 +893,9 @@
         },
         "tree": {
           "DecisionTreeClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "criterion": ["gini", "entropy"],
                 "splitter": ["best", "random"],
@@ -816,21 +908,9 @@
         },
         "ensemble": {
           "RandomForestClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "n_estimators": [10, 50, 100, 200, 300],
                 "criterion": ["gini", "entropy"],
@@ -842,21 +922,9 @@
             }
           },
           "HistGradientBoostingClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "max_leaf_nodes": [15, 31, 63, 127],
                 "max_depth": [10, 20, 30],
@@ -866,21 +934,9 @@
             }
           },
           "AdaBoostClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "n_estimators": [10, 50, 100, 200, 300],
                 "algorithm": ["SAMME.R"],
@@ -892,21 +948,9 @@
         },
         "neural_network": {
           "MLPClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "activation": ["identity", "logistic", "tanh", "relu"],
                 "solver": ["lbfgs", "sgd", "adam"],
@@ -921,25 +965,40 @@
         },
         "XGBoost": {
           "XGBClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
-              "hyperparameter_settings": {
-                "n_iter": 3,
-                "scoring": ["accuracy"],
-                "cv": {
-                  "RepeatedStratifiedKFold": {
-                    "n_splits": 7,
-                    "n_repeats": 3,
-                    "random_state": 0
-                  }
-                },
-                "n_jobs": 2
-              },
               "param_distribution": {
                 "n_estimators": [10, 50, 100, 200, 300],
                 "max_depth": [3, 5, 7, 9, 12],
                 "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3]
+              }
+            }
+          }
+        },
+        "CatBoost": {
+          "CatBoostClassifier": {
+            "usage": 0,
+            "run_feature_selection": false,
+            "hyperparameters": {
+              "param_distribution": {
+                "depth": [4, 6, 8, 10],
+                "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3],
+                "min_child_samples": [1, 5, 10, 20, 30]
+              }
+            }
+          }
+        },
+        "LightGBM": {
+          "LGBMClassifier": {
+            "usage": 0,
+            "run_feature_selection": false,
+            "hyperparameters": {
+              "param_distribution": {
+                "n_estimators": [10, 50, 100, 200, 300],
+                "max_depth": [3, 5, 7, 9, 12],
+                "learning_rate": [0.01, 0.05, 0.1, 0.2, 0.3],
+                "num_leaves": [15, 31, 63, 127, 255]
               }
             }
           }
