@@ -813,25 +813,15 @@ class ModelTraining:
             plt.savefig(f"{saving_path}\\Plots\\AUC.png", bbox_inches="tight")
         # plt.close()
 
-    def shap_analysis(self, model, X_test, X_test_original, y_test):
+    def shap_analysis(self, model, X_test, y_test):
         import shap
 
         shap.initjs()
 
-        # Check the type of the model and return the appropriate explainer
-        X_test_original_cp = X_test_original.copy()
-
-        for col_type, preprocessor_dict in self.encoder_dict.items():
-            if col_type == "categorical_encoder":
-                for col, encoder in preprocessor_dict.items():
-                    X_test_original_cp = encoder.inverse_transform(X_test_original_cp)
-            if col_type == "numerical_encoder":
-                for col, encoder in preprocessor_dict.items():
-                    X_test_original_cp = encoder.inverse_transform(X_test_original_cp)
         if isinstance(
-            model, (LogisticRegression, Perceptron, SGDClassifier, RidgeClassifierCV)
+            model, (LogisticRegression, Perceptron, SGDClassifier, RidgeClassifier)
         ):
-            explainer = shap.LinearExplainer(model, X_test_original_cp)
+            explainer = shap.LinearExplainer(model, X_test)
         elif isinstance(
             model,
             (
@@ -848,51 +838,59 @@ class ModelTraining:
         elif isinstance(
             model, (KNeighborsClassifier, SVC, ComplementNB, MLPClassifier)
         ):
-            explainer = shap.KernelExplainer(model.predict_proba, X_test_original_cp)
+            explainer = shap.KernelExplainer(model.predict_proba, X_test)
         else:
             raise ValueError(f"Unsupported model: {type(model)}")
 
-        explainer_shap = explainer(X_test_original_cp)
-        shap_values = explainer.shap_values(X_test_original_cp)
+        explainer_shap = explainer(X_test)
+
         shap.plots.bar(explainer_shap)
         with plt.rc_context():  # Use this to set figure params like size and dpi
             plt.savefig(
                 f"{self.saving_path}\\Plots\\SHAP_Bar_Plot.png", bbox_inches="tight"
             )
-        plt.close()
+            plt.close()
 
-        shap.summary_plot(explainer_shap, X_test_original_cp)
+        shap.summary_plot(explainer_shap, X_test)
         with plt.rc_context():  # Use this to set figure params like size and dpi
             plt.savefig(
                 f"{self.saving_path}\\Plots\\SHAP_Summary_Plot.png", bbox_inches="tight"
             )
             plt.close()
 
-        # Create a SHAP decision plot for the first instance
-        shap.decision_plot(
-            explainer.expected_value, shap_values[0, :], X_test_original_cp.iloc[0, :]
-        )
+        shap.plots.beeswarm(explainer_shap)
         with plt.rc_context():
-            # Save the plots to the reports folder
             plt.savefig(
-                f"{self.saving_path}\\Plots\\SHAP_Decision_Plot.png",
+                f"{self.saving_path}\\Plots\\SHAP_Beeswarm_Plot.png",
                 bbox_inches="tight",
             )
             plt.close()
+
+        # Create a SHAP decision plot for the first instance
+        # shap.decision_plot(
+        #     explainer.expected_value, shap_values[0, :], X_test.iloc[0, :]
+        # )
+        # with plt.rc_context():
+        #     # Save the plots to the reports folder
+        #     plt.savefig(
+        #         f"{self.saving_path}\\Plots\\SHAP_Decision_Plot.png",
+        #         bbox_inches="tight",
+        #     )
+        #     plt.close()
 
         # add a force plot
-        shap.force_plot(
-            explainer.expected_value,
-            shap_values[0, :],
-            X_test_original_cp.iloc[0, :],
-            matplotlib=True,
-        )
-        # save the force plot with rc
-        with plt.rc_context():
-            plt.savefig(
-                f"{self.saving_path}\\Plots\\SHAP_Force_Plot.png",
-                bbox_inches="tight",
-            )
-            plt.close()
+        # shap.force_plot(
+        #     explainer.expected_value,
+        #     shap_values[0, :],
+        #     X_test.iloc[0, :],
+        #     matplotlib=True,
+        # )
+        # # save the force plot with rc
+        # with plt.rc_context():
+        #     plt.savefig(
+        #         f"{self.saving_path}\\Plots\\SHAP_Force_Plot.png",
+        #         bbox_inches="tight",
+        #     )
+        #     plt.close()
 
-        return shap_values, explainer
+        return explainer

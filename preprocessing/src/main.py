@@ -148,11 +148,8 @@ class Orchestrator(object):
             )
             # Save the best model
             ModelTrainingPipeline.save_best_model(best_clf)
-
             # Shap values and feature importance analysis
-            ModelTrainingPipeline.shap_analysis(
-                best_clf, X_test_new, self.data_dict["original_X_test"], y_test
-            )
+            eplainer = ModelTrainingPipeline.shap_analysis(best_clf, X_test_new, y_test)
 
         elif modelling_problem_type == "regression":
             baseline_model = ModelTrainingPipeline.find_best_reg(
