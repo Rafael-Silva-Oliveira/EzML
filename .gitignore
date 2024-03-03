@@ -1089,3 +1089,4 @@ preprocessing/reports/PipelineRun_2024_03_03-12_59_52_PM/Plots/TrainingCurve_Rid
 preprocessing/reports/PipelineRun_2024_03_03-12_59_52_PM/Plots/TrainingCurve_SGDClassifier.png
 preprocessing/reports/PipelineRun_2024_03_03-12_59_52_PM/Plots/TrainingCurve_SVC.png
 preprocessing/reports/PipelineRun_2024_03_03-12_59_52_PM/Plots/TrainingCurve_XGBClassifier.png
+catboost_info/catboost_training.json
