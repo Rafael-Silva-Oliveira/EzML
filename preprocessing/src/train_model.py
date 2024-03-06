@@ -357,7 +357,7 @@ class ModelTraining:
 
                     cv_results_dict[model_name] = cv_results
 
-                    # TODO: save the cv_results dictionary to an excel file
+                    # Save CV results to excel
                     pd.DataFrame.from_records(cv_results).to_excel(
                         f"{self.saving_path}\\Files\\{model_name}_cv_results.xlsx",
                         index=False,
@@ -870,32 +870,5 @@ class ModelTraining:
                 bbox_inches="tight",
             )
             plt.close()
-
-        # Create a SHAP decision plot for the first instance
-        # shap.decision_plot(
-        #     explainer.expected_value, shap_values[0, :], X_test.iloc[0, :]
-        # )
-        # with plt.rc_context():
-        #     # Save the plots to the reports folder
-        #     plt.savefig(
-        #         f"{self.saving_path}\\Plots\\SHAP_Decision_Plot.png",
-        #         bbox_inches="tight",
-        #     )
-        #     plt.close()
-
-        # add a force plot
-        # shap.force_plot(
-        #     explainer.expected_value,
-        #     shap_values[0, :],
-        #     X_test.iloc[0, :],
-        #     matplotlib=True,
-        # )
-        # # save the force plot with rc
-        # with plt.rc_context():
-        #     plt.savefig(
-        #         f"{self.saving_path}\\Plots\\SHAP_Force_Plot.png",
-        #         bbox_inches="tight",
-        #     )
-        #     plt.close()
 
         return explainer
