@@ -788,7 +788,7 @@
             }
           },
           "Perceptron": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": true,
             "hyperparameters": {
               "param_distribution": {
@@ -803,7 +803,7 @@
             }
           },
           "SGDClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": true,
             "hyperparameters": {
               "param_distribution": {
@@ -829,7 +829,7 @@
             }
           },
           "RidgeClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": true,
             "hyperparameters": {
               "param_distribution": {
@@ -850,7 +850,7 @@
         },
         "neighbors": {
           "KNeighborsClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -865,7 +865,7 @@
         },
         "svm": {
           "SVC": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -880,7 +880,7 @@
         },
         "naive_bayes": {
           "ComplementNB": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -893,7 +893,7 @@
         },
         "tree": {
           "DecisionTreeClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -908,7 +908,7 @@
         },
         "ensemble": {
           "RandomForestClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -922,7 +922,7 @@
             }
           },
           "HistGradientBoostingClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -934,7 +934,7 @@
             }
           },
           "AdaBoostClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -948,7 +948,7 @@
         },
         "neural_network": {
           "MLPClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -965,7 +965,7 @@
         },
         "XGBoost": {
           "XGBClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -978,7 +978,7 @@
         },
         "CatBoost": {
           "CatBoostClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {
@@ -991,7 +991,7 @@
         },
         "LightGBM": {
           "LGBMClassifier": {
-            "usage": 1,
+            "usage": 0,
             "run_feature_selection": false,
             "hyperparameters": {
               "param_distribution": {

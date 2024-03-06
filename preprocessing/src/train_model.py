@@ -356,6 +356,12 @@ class ModelTraining:
                         )
 
                     cv_results_dict[model_name] = cv_results
+
+                    # TODO: save the cv_results dictionary to an excel file
+                    pd.DataFrame.from_records(cv_results).to_excel(
+                        f"{self.saving_path}\\Files\\{model_name}_cv_results.xlsx",
+                        index=False,
+                    )
                     # This "test_scoring_type" is actually the validation set. The actual test set will only be used to calculate the final classification report to avoid data leakage.Do note that if more scorings are added to the list, only the first one will be used to evaluate the best model score
 
                     cv_results_test = cv_results[f"test_{eval_score}"]
@@ -367,7 +373,6 @@ class ModelTraining:
                         "std": cv_results_test.std(),
                     }
 
-                    # NOTE: it doesn't make sense to add the Confusion Matrix for the traning data since the model has already been trained and seen the training data. If we fit the model again on the training data, it will provide much better results in the confusion matrix than the results that were seen in the training and validation scores. Confusion Matrix is only used on the test data
                     self.plot_training_curves(
                         optimized_clf,
                         eval_score=eval_score,
