@@ -827,18 +827,15 @@ class ModelTraining:
             model, (LogisticRegression, Perceptron, SGDClassifier, RidgeClassifier)
         ):
             explainer = shap.LinearExplainer(model, X_test)
-        elif isinstance(
-            model,
-            (
-                RandomForestClassifier,
-                DecisionTreeClassifier,
-                HistGradientBoostingClassifier,
-                AdaBoostClassifier,
-                XGBClassifier,
-                CatBoostClassifier,
-                LGBMClassifier,
-            ),
-        ):
+        elif model.__class__.__name__ in [
+            "RandomForestClassifier",
+            "DecisionTreeClassifier",
+            "HistGradientBoostingClassifier",
+            "AdaBoostClassifier",
+            "XGBClassifier",
+            "CatBoostClassifier",
+            "LGBMClassifier",
+        ]:
             explainer = shap.TreeExplainer(model)
         elif isinstance(
             model, (KNeighborsClassifier, SVC, ComplementNB, MLPClassifier)
@@ -847,28 +844,27 @@ class ModelTraining:
         else:
             raise ValueError(f"Unsupported model: {type(model)}")
 
-        explainer_shap = explainer(X_test)
+        shap_values = explainer(X_test)
 
-        shap.plots.bar(explainer_shap)
+        shap.plots.bar(shap_values)
         with plt.rc_context():  # Use this to set figure params like size and dpi
             plt.savefig(
                 f"{self.saving_path}\\Plots\\SHAP_Bar_Plot.png", bbox_inches="tight"
             )
-            plt.close()
 
-        shap.summary_plot(explainer_shap, X_test)
+        shap.summary_plot(shap_values.data, X_test)
+        plt.xlim(-2, 10)
         with plt.rc_context():  # Use this to set figure params like size and dpi
             plt.savefig(
-                f"{self.saving_path}\\Plots\\SHAP_Summary_Plot.png", bbox_inches="tight"
-            )
-            plt.close()
-
-        shap.plots.beeswarm(explainer_shap)
-        with plt.rc_context():
-            plt.savefig(
-                f"{self.saving_path}\\Plots\\SHAP_Beeswarm_Plot.png",
+                f"{self.saving_path}\\Plots\\SHAP_Summary_Plot.png",
                 bbox_inches="tight",
             )
-            plt.close()
+
+        # shap.plots.beeswarm(shap_values)
+        # with plt.rc_context():
+        #     plt.savefig(
+        #         f"{self.saving_path}\\Plots\\SHAP_Beeswarm_Plot.png",
+        #         bbox_inches="tight",
+        #     )
 
         return explainer
