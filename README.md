@@ -1,57 +1,30 @@
-EzML: Customizable Machine Learning Pipeline for Tabular Data Classification models
-==============================
+# EzML: Customizable Machine Learning Pipeline for Tabular Data Classification models
 
-Pipeline for feature engineering and preprocessing with scikit learn and pandas
+Pipeline for ML on tabular data for classification purposes (regression soon to be added).
 
-Project Organization
-------------
+# How it works
 
-    ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+An orchestrator present in the 'main.py' reads the 'config.json' file which is a configuration file that contains all the information necessary to preprocess, perform Cross-Validation steps, feature selection, as well as models to do training and optimization parameters while saving all the steps in a 'loguru.log' file. These scripts and JSON file can be found on the 'src' folder.
 
+The scripts on the 'src' folder are:
 
---------
+- 'main.py': The main file that runs the orchestrator. This orchestrator in turn calls the remaining steps of the pipeline according to the settings on the 'config.json' configuration file.
 
-<p><small>Project based on the <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. #cookiecutterdatascience</small></p>
+- 'preprocessing.py': This is the first script that is run by the orchestrator in order to preprocess the data (scaling, solving missing values, categorical encoding, etc). This script contains the 'PreProcessor' class with the methods necessary to do the preprocessing steps.
+
+- 'train_model.py': A python script containing the 'ModelTraining' class that reads the 'config.json' configuration file, trains the models, optimizes, saves the best model and other plots for model evaluation as well as an excel file with the metrics employed in the cross validation set.
+
+- 'utils.py': A utilities script that contains helper functions independent of the main classes from 'preprocessing.py' and 'train_model.py'.
+
+# Things to consider on the 'config.json' configuration file:
+
+The setting 'path_backbone' is the path for the repository. If you clone the repo to your local system, make sure to paste the path to the local repo clone in this setting. The 'data' setting is where the data is located inside the 'path_backbone' directory. This can be kept as is as long as the structure of the repository isn't changed (particularly naming on the 'data' folder).
+
+# Next features:
+
+New features will be included, such as:
+
+- Configuration for regression problems;
+- Settings for both binary, multi-class and multi-label classification problems;
+- Improved logging and error catching;
+- Better 'readme' file containing detailed information on how to operate the 'config.json' file.
