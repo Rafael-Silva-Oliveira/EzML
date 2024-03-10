@@ -207,6 +207,4 @@ def main(CONFIG_PATH: str):
 
 
 if __name__ == "__main__":
-    main(
-        CONFIG_PATH=r"C:\Users\rafaelo\OneDrive - NTNU\Documents\Projects\preprocessing\preprocessing\preprocessing\src\config.json"
-    )
+    main(CONFIG_PATH=r".\src\config.json")
