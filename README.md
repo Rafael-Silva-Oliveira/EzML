@@ -1,4 +1,4 @@
-preprocessing
+EzML: Customizable Machine Learning Pipeline for Tabular Data Classification models
 ==============================
 
 Pipeline for feature engineering and preprocessing with scikit learn and pandas
