@@ -36,6 +36,10 @@ class PreProcessor:
     def encoders(self, data: pd.DataFrame, dtype: str):
 
         logger.info(f"Pre-processing {dtype} columns")
+        # log_transformer =FunctionTransformer(np.log1p)
+        # pipeline =(["log_transform",log_transformer),("classifier",classifier)])
+        # pipeline.fit(X_train,y_train)
+        # predictions = pipeline.predict(X_test)...
 
         if dtype == "categorical":
             avaliable_preprocessors = {
